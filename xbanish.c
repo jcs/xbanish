@@ -43,7 +43,7 @@ int
 main(int argc, char *argv[])
 {
 	Display *dpy;
-	int debug = 0, ch;
+	int debug = 0, hiding = 0, ch;
 
 	while ((ch = getopt(argc, argv, "d")) != -1)
 		switch (ch) {
@@ -70,25 +70,34 @@ main(int argc, char *argv[])
 		switch (e.type) {
 		case KeyRelease:
 			if (debug)
-				printf("keystroke %d, hiding cursor\n",
-				    e.xkey.keycode);
+				printf("keystroke %d, %shiding cursor\n",
+				    e.xkey.keycode, (hiding ? "already " :
+				    ""));
 
-			/* hide cursor */
-			Cursor c = blank_cursor(dpy, DefaultRootWindow(dpy));
-			XGrabPointer(dpy, DefaultRootWindow(dpy), 0,
-			    PointerMotionMask | ButtonPressMask |
-			    ButtonReleaseMask, GrabModeAsync, GrabModeAsync,
-			    None, c, CurrentTime);
+			if (!hiding) {
+				Cursor c = blank_cursor(dpy,
+				    DefaultRootWindow(dpy));
+				XGrabPointer(dpy, DefaultRootWindow(dpy), 0,
+				    PointerMotionMask | ButtonPressMask |
+				    ButtonReleaseMask, GrabModeAsync,
+				    GrabModeAsync, None, c, CurrentTime);
+
+				hiding = 1;
+			}
 
 			break;
 
 		case ButtonRelease:
 		case MotionNotify:
 			if (debug)
-				printf("mouse moved to %d,%d, showing cursor\n",
-				    e.xmotion.x, e.xmotion.y);
+				printf("mouse moved to %d,%d, %sunhiding "
+				    "cursor\n", e.xmotion.x, e.xmotion.y,
+				    (hiding ? "" : "already "));
 
-			XUngrabPointer(dpy, CurrentTime);
+			if (hiding) {
+				XUngrabPointer(dpy, CurrentTime);
+				hiding = 0;
+			}
 
 			break;
 
