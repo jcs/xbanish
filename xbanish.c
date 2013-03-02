@@ -26,24 +26,39 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <err.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/cursorfont.h>
+#include <X11/Xatom.h>
+
+#ifndef nitems
+#define nitems(_a) (sizeof((_a)) / sizeof((_a)[0]))
+#endif
 
 void snoop(Display *, Window);
 void usage(void);
 Cursor blank_cursor(Display *, Window);
+int ignore_window(Display *, Window);
+
+static int debug = 0;
+
+/* list of windows (by matching name) to ignore and ungrab on */
+static char *ignores[] = {
+	"xlock",
+};
 
 int
 main(int argc, char *argv[])
 {
 	Display *dpy;
-	int debug = 0, hiding = 0, ch;
+	int hiding = 0, ch;
+	XEvent e;
 
 	while ((ch = getopt(argc, argv, "d")) != -1)
 		switch (ch) {
@@ -64,7 +79,6 @@ main(int argc, char *argv[])
 	snoop(dpy, DefaultRootWindow(dpy));
 
 	for (;;) {
-		XEvent e;
 		XNextEvent(dpy, &e);
 
 		switch (e.type) {
@@ -77,12 +91,11 @@ main(int argc, char *argv[])
 			if (!hiding) {
 				Cursor c = blank_cursor(dpy,
 				    DefaultRootWindow(dpy));
-				XGrabPointer(dpy, DefaultRootWindow(dpy), 0,
+				hiding = !XGrabPointer(dpy,
+				    DefaultRootWindow(dpy), 0,
 				    PointerMotionMask | ButtonPressMask |
 				    ButtonReleaseMask, GrabModeAsync,
 				    GrabModeAsync, None, c, CurrentTime);
-
-				hiding = 1;
 			}
 
 			break;
@@ -102,6 +115,15 @@ main(int argc, char *argv[])
 			break;
 
 		case CreateNotify:
+			if (ignore_window(dpy, e.xcreatewindow.window)) {
+				if (hiding) {
+					XUngrabPointer(dpy, CurrentTime);
+					hiding = 0;
+				}
+
+				continue;
+			}
+
 			if (debug)
 				printf("created new window, snooping on it\n");
 
@@ -172,4 +194,40 @@ usage(void)
 {
 	fprintf(stderr, "usage: xbanish [-d]\n");
 	exit(1);
+}
+
+int
+ignore_window(Display *dpy, Window win)
+{
+	char *name = NULL;
+	XTextProperty text_prop;
+	int ret, count, i;
+	char **list;
+
+	if (XGetWMName(dpy, win, &text_prop) == 0)
+		return 0;
+
+	ret = XmbTextPropertyToTextList(dpy, &text_prop, &list, &count);
+	if (ret == Success && list && count > 0) {
+		name = strdup(list[0]);
+		XFreeStringList(list);
+	}
+	else if (text_prop.encoding == XA_STRING)
+		name = strdup((char*)text_prop.value);
+
+	XFree (text_prop.value);
+
+	if (name == NULL || strlen(name) == 0)
+		return 0;
+
+	for (i = 0; i < nitems(ignores); i++)
+		if (strncasecmp(name, ignores[i], strlen(ignores[i])) == 0) {
+			if (debug)
+				printf("ignoring \"%s\" (matches \"%s\")\n",
+				    name, ignores[i]);
+
+			return 1;
+		}
+
+	return 0;
 }
