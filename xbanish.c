@@ -45,6 +45,7 @@ void snoop(Display *, Window);
 void usage(void);
 Cursor blank_cursor(Display *, Window);
 int ignore_window(Display *, Window);
+int swallow_error(Display *, XErrorEvent *);
 
 static int debug = 0;
 
@@ -75,6 +76,8 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		errx(1, "can't open display %s", XDisplayName(NULL));
 
+	XSetErrorHandler(swallow_error);
+
 	/* recurse from root window down */
 	snoop(dpy, DefaultRootWindow(dpy));
 
@@ -104,7 +107,8 @@ main(int argc, char *argv[])
 		case MotionNotify:
 			if (debug)
 				printf("mouse moved to %d,%d, %sunhiding "
-				    "cursor\n", e.xmotion.x, e.xmotion.y,
+				    "cursor\n", e.xmotion.x_root,
+				    e.xmotion.y_root,
 				    (hiding ? "" : "already "));
 
 			if (hiding) {
@@ -128,7 +132,8 @@ main(int argc, char *argv[])
 				printf("created new window, snooping on it\n");
 
 			/* not sure why snooping directly on the window doesn't
-			 * work, so recurse from its parent (probably root) */
+			 * work, so snoop on all windows from its parent
+			 * (probably root) */
 			snoop(dpy, e.xcreatewindow.parent);
 
 			break;
@@ -140,11 +145,11 @@ void
 snoop(Display *dpy, Window win)
 {
 	Window parent, root, *kids;
-	XSetWindowAttributes nattrs;
-	unsigned int nkids, i;
+	XSetWindowAttributes sattrs;
+	unsigned int nkids = 0, i;
 
 	/* firefox stops responding to keys when KeyPressMask is used, so
-	 * settle for keyreleasemask */
+	 * settle for KeyReleaseMask */
 	int type = PointerMotionMask | KeyReleaseMask | Button1MotionMask |
 		Button2MotionMask | Button3MotionMask | Button4MotionMask |
 		Button5MotionMask | ButtonMotionMask;
@@ -158,14 +163,11 @@ snoop(Display *dpy, Window win)
 	XSelectInput(dpy, root, type);
 
 	/* listen for newly mapped windows */
-	nattrs.event_mask = SubstructureNotifyMask;
-	XChangeWindowAttributes(dpy, root, CWEventMask, &nattrs);
+	sattrs.event_mask = SubstructureNotifyMask;
+	XChangeWindowAttributes(dpy, root, CWEventMask, &sattrs);
 
-	/* recurse */
-	for (i = 0; i < nkids; i++) {
+	for (i = 0; i < nkids; i++)
 		XSelectInput(dpy, kids[i], type);
-		snoop(dpy, kids[i]);
-	}
 
 done:
 	if (kids != NULL)
@@ -194,6 +196,23 @@ usage(void)
 {
 	fprintf(stderr, "usage: xbanish [-d]\n");
 	exit(1);
+}
+
+int
+swallow_error(Display *dpy, XErrorEvent *e)
+{
+	if (debug)
+		printf("got X error %d%s\n", e->error_code,
+		    (e->error_code == BadWindow ? " (BadWindow; harmless)" :
+		    ""));
+
+	if (e->error_code == BadWindow)
+		/* no biggie */
+		return 0;
+	else {
+		fprintf(stderr, "xbanish: got X error %d\n", e->error_code);
+		exit(1);
+	}
 }
 
 int
