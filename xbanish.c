@@ -167,8 +167,10 @@ snoop(Display *dpy, Window win)
 	sattrs.event_mask = SubstructureNotifyMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask, &sattrs);
 
-	for (i = 0; i < nkids; i++)
+	for (i = 0; i < nkids; i++) {
 		XSelectInput(dpy, kids[i], type);
+		snoop(dpy, kids[i]);
+	}
 
 done:
 	if (kids != NULL)
