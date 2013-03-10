@@ -155,8 +155,10 @@ snoop(Display *dpy, Window win)
 		Button2MotionMask | Button3MotionMask | Button4MotionMask |
 		Button5MotionMask | ButtonMotionMask;
 
-	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == FALSE)
-		err(1, "can't query window tree\n");
+	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == FALSE) {
+		warn("can't query window tree\n");
+		goto done;
+	}
 
 	if (!nkids)
 		goto done;
