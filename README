@@ -14,4 +14,25 @@ The name comes from ratpoison's "banish" command that sends the cursor to the
 corner of the screen.
 
 
+Implementation
+===============================================================================
+
+xbanish recurses through the list of windows starting at the root, and calls
+XSelectInput() on each window to receive notification of mouse motion, button
+presses, or key press.  When a key press occurs, the cursor is hidden.  When
+the mouse moves or a button is pressed, the cursor is shown.
+
+xbanish initially hid the cursor by calling XGrabPointer() with a blank cursor
+image, similar to unclutter's -grab mode, but this had problematic interactions
+with certain X applications.  For example, xlock could not grab the pointer and
+sometimes didn't lock, xwininfo wouldn't work at all, Firefox would quickly
+hide the Awesome Bar dropdown as soon as a key was pressed, and xterm required
+two middle-clicks to paste the clipboard contents.
+
+To avoid these problems and simplify the implementation, xbanish now uses the
+modern Xfixes extension[1] to easily hide and show the cursor with
+XFixesHideCursor() and XFixesShowCursor().
+
+
 0. https://bugs.launchpad.net/ubuntu/+source/unclutter/+bug/54148
+1. http://cgit.freedesktop.org/xorg/proto/fixesproto/plain/fixesproto.txt

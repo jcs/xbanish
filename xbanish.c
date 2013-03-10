@@ -35,25 +35,13 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
-#include <X11/cursorfont.h>
-#include <X11/Xatom.h>
-
-#ifndef nitems
-#define nitems(_a) (sizeof((_a)) / sizeof((_a)[0]))
-#endif
+#include <X11/extensions/Xfixes.h>
 
 void snoop(Display *, Window);
 void usage(void);
-Cursor blank_cursor(Display *, Window);
-int ignore_window(Display *, Window);
 int swallow_error(Display *, XErrorEvent *);
 
 static int debug = 0;
-
-/* list of windows (by matching name) to ignore and ungrab on */
-static char *ignores[] = {
-	"xlock",
-};
 
 int
 main(int argc, char *argv[])
@@ -93,13 +81,8 @@ main(int argc, char *argv[])
 				    ""));
 
 			if (!hiding) {
-				Cursor c = blank_cursor(dpy,
-				    DefaultRootWindow(dpy));
-				hiding = !XGrabPointer(dpy,
-				    DefaultRootWindow(dpy), 0,
-				    PointerMotionMask | ButtonPressMask |
-				    ButtonReleaseMask, GrabModeAsync,
-				    GrabModeAsync, None, c, CurrentTime);
+				XFixesHideCursor(dpy, DefaultRootWindow(dpy));
+				hiding = 1;
 			}
 
 			break;
@@ -113,22 +96,13 @@ main(int argc, char *argv[])
 				    (hiding ? "" : "already "));
 
 			if (hiding) {
-				XUngrabPointer(dpy, CurrentTime);
+				XFixesShowCursor(dpy, DefaultRootWindow(dpy));
 				hiding = 0;
 			}
 
 			break;
 
 		case CreateNotify:
-			if (ignore_window(dpy, e.xcreatewindow.window)) {
-				if (hiding) {
-					XUngrabPointer(dpy, CurrentTime);
-					hiding = 0;
-				}
-
-				continue;
-			}
-
 			if (debug)
 				printf("created new window, snooping on it\n");
 
@@ -179,23 +153,6 @@ done:
 		XFree(kids); /* hide yo kids */
 }
 
-Cursor
-blank_cursor(Display *dpy, Window win)
-{
-	Pixmap mask;
-	XColor nocolor;
-	Cursor nocursor;
-
-	mask = XCreatePixmap(dpy, win, 1, 1, 1);
-	nocolor.pixel = 0;
-	nocursor = XCreatePixmapCursor(dpy, mask, mask, &nocolor, &nocolor, 0,
-	    0);
-
-	XFreePixmap(dpy, mask);
-
-	return nocursor;
-}
-
 void
 usage(void)
 {
@@ -218,40 +175,4 @@ swallow_error(Display *dpy, XErrorEvent *e)
 		fprintf(stderr, "xbanish: got X error %d\n", e->error_code);
 		exit(1);
 	}
-}
-
-int
-ignore_window(Display *dpy, Window win)
-{
-	char *name = NULL;
-	XTextProperty text_prop;
-	int ret, count, i;
-	char **list;
-
-	if (XGetWMName(dpy, win, &text_prop) == 0)
-		return 0;
-
-	ret = XmbTextPropertyToTextList(dpy, &text_prop, &list, &count);
-	if (ret == Success && list && count > 0) {
-		name = strdup(list[0]);
-		XFreeStringList(list);
-	}
-	else if (text_prop.encoding == XA_STRING)
-		name = strdup((char*)text_prop.value);
-
-	XFree (text_prop.value);
-
-	if (name == NULL || strlen(name) == 0)
-		return 0;
-
-	for (i = 0; i < nitems(ignores); i++)
-		if (strncasecmp(name, ignores[i], strlen(ignores[i])) == 0) {
-			if (debug)
-				printf("ignoring \"%s\" (matches \"%s\")\n",
-				    name, ignores[i]);
-
-			return 1;
-		}
-
-	return 0;
 }
