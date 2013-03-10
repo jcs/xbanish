@@ -19,7 +19,7 @@ Implementation
 
 xbanish recurses through the list of windows starting at the root, and calls
 XSelectInput() on each window to receive notification of mouse motion, button
-presses, or key press.  When a key press occurs, the cursor is hidden.  When
+presses, and key presses.  When a key press occurs, the cursor is hidden.  When
 the mouse moves or a button is pressed, the cursor is shown.
 
 xbanish initially hid the cursor by calling XGrabPointer() with a blank cursor
