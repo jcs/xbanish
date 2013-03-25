@@ -119,7 +119,7 @@ main(int argc, char *argv[])
 void
 snoop(Display *dpy, Window win)
 {
-	Window parent, root, *kids;
+	Window parent, root, *kids = NULL;
 	XSetWindowAttributes sattrs;
 	unsigned int nkids = 0, i;
 
