@@ -41,6 +41,8 @@ void snoop(Display *, Window);
 void usage(void);
 int swallow_error(Display *, XErrorEvent *);
 
+extern char *__progname;
+
 static int debug = 0;
 
 int
@@ -156,7 +158,7 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: xbanish [-d]\n");
+	fprintf(stderr, "usage: %s [-d]\n", __progname);
 	exit(1);
 }
 
@@ -172,7 +174,8 @@ swallow_error(Display *dpy, XErrorEvent *e)
 		/* no biggie */
 		return 0;
 	else {
-		fprintf(stderr, "xbanish: got X error %d\n", e->error_code);
+		fprintf(stderr, "%s: got X error %d\n", __progname,
+			e->error_code);
 		exit(1);
 	}
 }
