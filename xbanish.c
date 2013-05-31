@@ -136,9 +136,6 @@ snoop(Display *dpy, Window win)
 		goto done;
 	}
 
-	if (!nkids)
-		goto done;
-
 	XSelectInput(dpy, root, type);
 
 	/* listen for newly mapped windows */
