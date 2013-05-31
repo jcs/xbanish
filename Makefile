@@ -1,6 +1,6 @@
 # vim:ts=8
 
-VERS	:= 1.0
+VERS	:= 1.1
 
 CC	?= cc
 CFLAGS	?= -O2 -Wall -Wunused -Wmissing-prototypes -Wstrict-prototypes
