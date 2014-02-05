@@ -44,6 +44,7 @@ int swallow_error(Display *, XErrorEvent *);
 extern char *__progname;
 
 static int debug = 0;
+static int super = 0;
 
 int
 main(int argc, char *argv[])
@@ -52,10 +53,13 @@ main(int argc, char *argv[])
 	int hiding = 0, ch;
 	XEvent e;
 
-	while ((ch = getopt(argc, argv, "d")) != -1)
+	while ((ch = getopt(argc, argv, "ds")) != -1)
 		switch (ch) {
 		case 'd':
 			debug = 1;
+			break;
+		case 's':
+			super = 1;
 			break;
 		default:
 			usage();
@@ -77,6 +81,8 @@ main(int argc, char *argv[])
 
 		switch (e.type) {
 		case KeyRelease:
+			if (super && e.xkey.state == Mod4Mask)
+				break;
 			if (debug)
 				printf("keystroke %d, %shiding cursor\n",
 				    e.xkey.keycode, (hiding ? "already " :
