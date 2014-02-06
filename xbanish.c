@@ -81,7 +81,7 @@ main(int argc, char *argv[])
 
 		switch (e.type) {
 		case KeyRelease:
-			if (super && e.xkey.state == Mod4Mask)
+			if (super && e.xkey.state >= Mod4Mask)
 				break;
 			if (debug)
 				printf("keystroke %d, %shiding cursor\n",
