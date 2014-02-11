@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -55,23 +56,26 @@ main(int argc, char *argv[])
 	struct mod_lookup {
 		char *name;
 		int mask;
-	};
-
-	struct mod_lookup lookup[] = {
+	} mods[] = {
 		{"shift", ShiftMask}, {"lock", LockMask},
 		{"control", ControlMask}, {"mod1", Mod1Mask},
 		{"mod2", Mod2Mask}, {"mod3", Mod3Mask},
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
-	};
+		};
 
 	while ((ch = getopt(argc, argv, "+di:")) != -1)
 		switch (ch) {
 		case 'i':
+			for (i=0; i<strlen(optarg); i++) {
+				optarg[i] = tolower(optarg[i]);
+			}
+
 			for (i=0; i<8; i++) {
-				if (strcmp(optarg, lookup[i].name) == 0) {
-					ignored |= lookup[i].mask;
+				if (strcmp(optarg, mods[i].name) == 0) {
+					ignored |= mods[i].mask;
 				}
 			}
+
 			break;
 		case 'd':
 			debug = 1;
@@ -181,7 +185,7 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-d]\n", __progname);
+	fprintf(stderr, "usage: %s [-d] [-i] key\n", __progname);
 	exit(1);
 }
 
