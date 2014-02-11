@@ -44,16 +44,35 @@ int swallow_error(Display *, XErrorEvent *);
 extern char *__progname;
 
 static int debug = 0;
+static unsigned char ignored;
 
 int
 main(int argc, char *argv[])
 {
 	Display *dpy;
-	int hiding = 0, ch;
+	int hiding = 0, ch, i;
 	XEvent e;
+	struct mod_lookup {
+		char *name;
+		int mask;
+	};
 
-	while ((ch = getopt(argc, argv, "d")) != -1)
+	struct mod_lookup lookup[] = {
+		{"shift", ShiftMask}, {"lock", LockMask},
+		{"control", ControlMask}, {"mod1", Mod1Mask},
+		{"mod2", Mod2Mask}, {"mod3", Mod3Mask},
+		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
+	};
+
+	while ((ch = getopt(argc, argv, "+di:")) != -1)
 		switch (ch) {
+		case 'i':
+			for (i=0; i<8; i++) {
+				if (strcmp(optarg, lookup[i].name) == 0) {
+					ignored |= lookup[i].mask;
+				}
+			}
+			break;
 		case 'd':
 			debug = 1;
 			break;
@@ -77,6 +96,13 @@ main(int argc, char *argv[])
 
 		switch (e.type) {
 		case KeyRelease:
+			if (ignored && (e.xkey.state & ignored)) {
+				if (debug)
+					printf("Ignored keystroke %d\n",
+							e.xkey.keycode);
+				break;
+			}
+
 			if (debug)
 				printf("keystroke %d, %shiding cursor\n",
 				    e.xkey.keycode, (hiding ? "already " :
