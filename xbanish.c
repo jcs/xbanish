@@ -31,7 +31,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <ctype.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -61,19 +60,14 @@ main(int argc, char *argv[])
 		{"control", ControlMask}, {"mod1", Mod1Mask},
 		{"mod2", Mod2Mask}, {"mod3", Mod3Mask},
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
-		};
+	};
 
 	while ((ch = getopt(argc, argv, "+di:")) != -1)
 		switch (ch) {
 		case 'i':
-			for (i=0; i<strlen(optarg); i++) {
-				optarg[i] = tolower(optarg[i]);
-			}
-
-			for (i=0; i<8; i++) {
-				if (strcmp(optarg, mods[i].name) == 0) {
+			for (i = 0; i < sizeof(mods) / sizeof(struct mod_lookup); i++) {
+				if (strcasecmp(optarg, mods[i].name) == 0)
 					ignored |= mods[i].mask;
-				}
 			}
 
 			break;
