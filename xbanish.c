@@ -62,7 +62,7 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "+di:")) != -1)
+	while ((ch = getopt(argc, argv, "di:")) != -1)
 		switch (ch) {
 		case 'i':
 			for (i = 0; i < sizeof(mods) / sizeof(struct mod_lookup); i++) {
