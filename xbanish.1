@@ -1,25 +1,28 @@
-.TH XBANISH 1 2014-02-13 "John Hill" "xbanish Manual" 
-
-.SH NAME
-xbanish \- hide the X mouse cursor when you type
-
-.SH SYNOPSIS
-.B xbanish 
-[\fI-d\fR]
-
-.SH DESCRIPTION
-.B xbanish
-hides the mouse cursor when you start typing, and shows it again when the mouse
-cursor moves or a mouse button is pressed.  This is similar to \fBxterm\fR(1)'s
-\fBpointerMode\fR setting, but xbanish works globally in the X11 session.
-
-.SH OPTIONS
-.BR \-d
-Print debugging messages to stdout
-
-.SH AUTHORS
-Joshua Stein
-(jcs@jcs.com)
-
-.SH SEE ALSO
-\fBxfixes\fR(3)
+.Dd $Mdocdate: February 13, 2014$
+.Dt xbanish 1
+.Os 
+.Sh NAME
+.Nm xbanish
+.Nd hide the X11 mouse cursor when a key is pressed
+.Sh SYNOPSIS
+.Nm
+.Op Fl d
+.Sh DESCRIPTION
+.Nm
+hides the X11 mouse cursor when a key is pressed.
+The cursor is shown again when it is moved or a mouse button is pressed.
+This is similar to the
+.Xr xterm 1
+setting
+.Ic pointerMode
+but the effect is global in the X11 session.
+.Sh OPTIONS
+.Bl -tag
+.It Fl d
+Print debugging messages to stdout.
+.El
+.Sh SEE ALSO
+.Xr xfixes 3
+.Sh AUTHORS
+.Mt jcs@jcs.org
+.An joshua stein

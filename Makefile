@@ -30,7 +30,7 @@ $(OBJS): *.c
 
 install: all
 	$(INSTALL_PROGRAM) $(PROG) $(BINDIR)
-	$(INSTALL_DATA) -Dm 644 xbanish.1 $(MANDIR)/xbanish.1
+	- $(INSTALL_DATA) -m 644 xbanish.1 $(MANDIR)/xbanish.1
 
 clean:
 	rm -f $(PROG) $(OBJS)
