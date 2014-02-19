@@ -65,10 +65,10 @@ main(int argc, char *argv[])
 	while ((ch = getopt(argc, argv, "di:")) != -1)
 		switch (ch) {
 		case 'i':
-			for (i = 0; i < sizeof(mods) / sizeof(struct mod_lookup); i++) {
+			for (i = 0;
+			    i < sizeof(mods) / sizeof(struct mod_lookup); i++)
 				if (strcasecmp(optarg, mods[i].name) == 0)
 					ignored |= mods[i].mask;
-			}
 
 			break;
 		case 'd':
@@ -96,8 +96,8 @@ main(int argc, char *argv[])
 		case KeyRelease:
 			if (ignored && (e.xkey.state & ignored)) {
 				if (debug)
-					printf("Ignored keystroke %d\n",
-							e.xkey.keycode);
+					printf("ignored keystroke %d\n",
+					    e.xkey.keycode);
 				break;
 			}
 
@@ -179,7 +179,7 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-d] [-i] key\n", __progname);
+	fprintf(stderr, "usage: %s [-d] [-i mod]\n", __progname);
 	exit(1);
 }
 
