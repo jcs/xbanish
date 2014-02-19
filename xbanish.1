@@ -1,12 +1,13 @@
 .Dd $Mdocdate: February 13, 2014$
 .Dt xbanish 1
-.Os 
+.Os
 .Sh NAME
 .Nm xbanish
 .Nd hide the X11 mouse cursor when a key is pressed
 .Sh SYNOPSIS
 .Nm
 .Op Fl d
+.Op Fl i Ar modifier
 .Sh DESCRIPTION
 .Nm
 hides the X11 mouse cursor when a key is pressed.
@@ -20,9 +21,15 @@ but the effect is global in the X11 session.
 .Bl -tag
 .It Fl d
 Print debugging messages to stdout.
+.It Fl i Ar modifier
+Ignore pressed key if
+.Ar modifier
+is used.
 .El
 .Sh SEE ALSO
 .Xr xfixes 3
 .Sh AUTHORS
-.Mt jcs@jcs.org
-.An joshua stein
+.Nm
+was written by
+.An joshua stein ,
+.Mt jcs@jcs.org .
