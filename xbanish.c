@@ -177,7 +177,6 @@ void
 snoop(Display *dpy, Window win)
 {
 	Window parent, root, *kids = NULL;
-	XTextProperty text_prop;
 	XSetWindowAttributes sattrs;
 	unsigned int nkids = 0, i;
 
@@ -213,7 +212,6 @@ snoop_xinput(Display *dpy, Window win)
 {
 	int opcode, event, error, numdevs, i, j;
 	int ev = 0;
-	int kp_type = -1, bp_type = -1;
 	XDeviceInfo *devinfo;
 	XInputClassInfo *ici;
 	XDevice *device;
