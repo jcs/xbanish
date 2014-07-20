@@ -36,10 +36,18 @@
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/extensions/Xfixes.h>
+#include <X11/extensions/XInput.h>
 
 void snoop(Display *, Window);
+void snoop_xinput(Display *, Window);
 void usage(void);
 int swallow_error(Display *, XErrorEvent *);
+
+static int button_press_type = -1;
+static int button_release_type = -1;
+static int key_press_type = -1;
+static int key_release_type = -1;
+static int motion_type = -1;
 
 extern char *__progname;
 
@@ -50,7 +58,7 @@ int
 main(int argc, char *argv[])
 {
 	Display *dpy;
-	int hiding = 0, ch, i;
+	int hiding = 0, xinput = 0, ch, i;
 	XEvent e;
 	struct mod_lookup {
 		char *name;
@@ -62,8 +70,11 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "di:")) != -1)
+	while ((ch = getopt(argc, argv, "di:p")) != -1)
 		switch (ch) {
+		case 'd':
+			debug = 1;
+			break;
 		case 'i':
 			for (i = 0;
 			    i < sizeof(mods) / sizeof(struct mod_lookup); i++)
@@ -71,8 +82,8 @@ main(int argc, char *argv[])
 					ignored |= mods[i].mask;
 
 			break;
-		case 'd':
-			debug = 1;
+		case 'p':
+			xinput = 1;
 			break;
 		default:
 			usage();
@@ -86,13 +97,26 @@ main(int argc, char *argv[])
 
 	XSetErrorHandler(swallow_error);
 
-	/* recurse from root window down */
-	snoop(dpy, DefaultRootWindow(dpy));
+	if (xinput)
+		snoop_xinput(dpy, DefaultRootWindow(dpy));
+	else
+		/* recurse from root window down */
+		snoop(dpy, DefaultRootWindow(dpy));
 
 	for (;;) {
 		XNextEvent(dpy, &e);
 
-		switch (e.type) {
+		int etype = e.type;
+		if (e.type == motion_type)
+			etype = MotionNotify;
+		else if (e.type == key_press_type ||
+		    e.type == key_release_type)
+			etype = KeyRelease;
+		else if (e.type == button_press_type ||
+		    e.type == button_release_type)
+			etype = ButtonRelease;
+
+		switch (etype) {
 		case KeyRelease:
 			if (ignored && (e.xkey.state & ignored)) {
 				if (debug)
@@ -129,15 +153,22 @@ main(int argc, char *argv[])
 			break;
 
 		case CreateNotify:
-			if (debug)
-				printf("created new window, snooping on it\n");
+			if (!xinput) {
+				if (debug)
+					printf("created new window, snooping "
+					    "on it\n");
 
-			/* not sure why snooping directly on the window doesn't
-			 * work, so snoop on all windows from its parent
-			 * (probably root) */
-			snoop(dpy, e.xcreatewindow.parent);
+				/* not sure why snooping directly on the window
+				 * doesn't work, so snoop on all windows from
+				 * its parent (probably root) */
+				snoop(dpy, e.xcreatewindow.parent);
+			}
 
 			break;
+
+		default:
+			if (debug)
+				printf("unknown event type %d\n", e.type);
 		}
 	}
 }
@@ -146,6 +177,7 @@ void
 snoop(Display *dpy, Window win)
 {
 	Window parent, root, *kids = NULL;
+	XTextProperty text_prop;
 	XSetWindowAttributes sattrs;
 	unsigned int nkids = 0, i;
 
@@ -177,22 +209,89 @@ done:
 }
 
 void
+snoop_xinput(Display *dpy, Window win)
+{
+	int opcode, event, error, numdevs, i, j;
+	int ev = 0;
+	int kp_type = -1, bp_type = -1;
+	XDeviceInfo *devinfo;
+	XInputClassInfo *ici;
+	XDevice *device;
+
+	if (!XQueryExtension(dpy, "XInputExtension", &opcode, &event, &error))
+		errx(1, "XInput extension not available");
+
+	devinfo = XListInputDevices(dpy, &numdevs);
+	XEventClass event_list[numdevs * 2];
+	for (i = 0; i < numdevs; i++) {
+		if (devinfo[i].use != IsXExtensionKeyboard &&
+		    devinfo[i].use != IsXExtensionPointer)
+			continue;
+
+		if (!(device = XOpenDevice(dpy, devinfo[i].id)))
+			break;
+
+		for (ici = device->classes, j = 0; j < devinfo[i].num_classes;
+		ici++, j++) {
+			switch (ici->input_class) {
+			case KeyClass:
+				if (debug)
+					printf("attaching to keyboard device "
+					    "%s (use %d)\n", devinfo[i].name,
+					    devinfo[i].use);
+
+				DeviceKeyPress(device, key_press_type,
+				    event_list[ev]); ev++;
+				DeviceKeyRelease(device, key_release_type,
+				    event_list[ev]); ev++;
+				break;
+
+			case ButtonClass:
+				if (debug)
+					printf("attaching to buttoned device "
+					    "%s (use %d)\n", devinfo[i].name,
+					    devinfo[i].use);
+
+				DeviceButtonPress(device, button_press_type,
+				    event_list[ev]); ev++;
+				DeviceButtonRelease(device,
+				    button_release_type, event_list[ev]); ev++;
+				break;
+
+			case ValuatorClass:
+				if (debug)
+					printf("attaching to pointing device "
+					    "%s (use %d)\n", devinfo[i].name,
+					    devinfo[i].use);
+
+				DeviceMotionNotify(device, motion_type,
+				    event_list[ev]); ev++;
+				break;
+			}
+		}
+
+		if (XSelectExtensionEvent(dpy, win, event_list, ev)) {
+			warn("error selecting extension events");
+			return;
+		}
+	}
+}
+
+void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-d] [-i mod]\n", __progname);
+	fprintf(stderr, "usage: %s [-dp] [-i mod]\n", __progname);
 	exit(1);
 }
 
 int
 swallow_error(Display *dpy, XErrorEvent *e)
 {
-	if (debug)
-		printf("got X error %d%s\n", e->error_code,
-		    (e->error_code == BadWindow ? " (BadWindow; harmless)" :
-		    ""));
-
 	if (e->error_code == BadWindow)
 		/* no biggie */
+		return 0;
+	else if (e->error_code & FirstExtensionError)
+		/* error requesting input on a particular xinput device */
 		return 0;
 	else {
 		fprintf(stderr, "%s: got X error %d\n", __progname,

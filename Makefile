@@ -15,7 +15,7 @@ INSTALL_DATA ?= install
 X11BASE	?= /usr/X11R6
 INCLUDES?= -I$(X11BASE)/include
 LDPATH	?= -L$(X11BASE)/lib
-LIBS	+= -lX11 -lXfixes
+LIBS	+= -lX11 -lXfixes -lXi
 
 PROG	= xbanish
 OBJS	= xbanish.o
