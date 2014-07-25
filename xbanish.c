@@ -1,6 +1,6 @@
 /*
  * xbanish
- * Copyright (c) 2013 joshua stein <jcs@jcs.org>
+ * Copyright (c) 2013, 2014 joshua stein <jcs@jcs.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,8 +38,8 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
 
+int snoop_xinput(Display *, Window);
 void snoop(Display *, Window);
-void snoop_xinput(Display *, Window);
 void usage(void);
 int swallow_error(Display *, XErrorEvent *);
 
@@ -58,7 +58,7 @@ int
 main(int argc, char *argv[])
 {
 	Display *dpy;
-	int hiding = 0, xinput = 0, ch, i;
+	int hiding = 0, legacy = 0, ch, i;
 	XEvent e;
 	struct mod_lookup {
 		char *name;
@@ -70,7 +70,7 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "di:p")) != -1)
+	while ((ch = getopt(argc, argv, "di:")) != -1)
 		switch (ch) {
 		case 'd':
 			debug = 1;
@@ -81,9 +81,6 @@ main(int argc, char *argv[])
 				if (strcasecmp(optarg, mods[i].name) == 0)
 					ignored |= mods[i].mask;
 
-			break;
-		case 'p':
-			xinput = 1;
 			break;
 		default:
 			usage();
@@ -97,11 +94,13 @@ main(int argc, char *argv[])
 
 	XSetErrorHandler(swallow_error);
 
-	if (xinput)
-		snoop_xinput(dpy, DefaultRootWindow(dpy));
-	else
-		/* recurse from root window down */
+	if (snoop_xinput(dpy, DefaultRootWindow(dpy)) == 0) {
+		if (debug)
+			warn("no XInput devices found, using legacy snooping");
+
+		legacy = 1;
 		snoop(dpy, DefaultRootWindow(dpy));
+	}
 
 	for (;;) {
 		XNextEvent(dpy, &e);
@@ -126,9 +125,8 @@ main(int argc, char *argv[])
 			}
 
 			if (debug)
-				printf("keystroke %d, %shiding cursor\n",
-				    e.xkey.keycode, (hiding ? "already " :
-				    ""));
+				printf("keystroke, %shiding cursor\n",
+				    (hiding ? "already " : ""));
 
 			if (!hiding) {
 				XFixesHideCursor(dpy, DefaultRootWindow(dpy));
@@ -153,7 +151,7 @@ main(int argc, char *argv[])
 			break;
 
 		case CreateNotify:
-			if (!xinput) {
+			if (legacy) {
 				if (debug)
 					printf("created new window, snooping "
 					    "on it\n");
@@ -173,41 +171,7 @@ main(int argc, char *argv[])
 	}
 }
 
-void
-snoop(Display *dpy, Window win)
-{
-	Window parent, root, *kids = NULL;
-	XSetWindowAttributes sattrs;
-	unsigned int nkids = 0, i;
-
-	/* firefox stops responding to keys when KeyPressMask is used, so
-	 * settle for KeyReleaseMask */
-	int type = PointerMotionMask | KeyReleaseMask | Button1MotionMask |
-		Button2MotionMask | Button3MotionMask | Button4MotionMask |
-		Button5MotionMask | ButtonMotionMask;
-
-	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == FALSE) {
-		warn("can't query window tree\n");
-		goto done;
-	}
-
-	XSelectInput(dpy, root, type);
-
-	/* listen for newly mapped windows */
-	sattrs.event_mask = SubstructureNotifyMask;
-	XChangeWindowAttributes(dpy, root, CWEventMask, &sattrs);
-
-	for (i = 0; i < nkids; i++) {
-		XSelectInput(dpy, kids[i], type);
-		snoop(dpy, kids[i]);
-	}
-
-done:
-	if (kids != NULL)
-		XFree(kids); /* hide yo kids */
-}
-
-void
+int
 snoop_xinput(Display *dpy, Window win)
 {
 	int opcode, event, error, numdevs, i, j;
@@ -216,8 +180,12 @@ snoop_xinput(Display *dpy, Window win)
 	XInputClassInfo *ici;
 	XDevice *device;
 
-	if (!XQueryExtension(dpy, "XInputExtension", &opcode, &event, &error))
-		errx(1, "XInput extension not available");
+	if (!XQueryExtension(dpy, "XInputExtension", &opcode, &event, &error)) {
+		if (debug)
+			warn("XInput extension not available");
+
+		return (0);
+	}
 
 	devinfo = XListInputDevices(dpy, &numdevs);
 	XEventClass event_list[numdevs * 2];
@@ -270,15 +238,52 @@ snoop_xinput(Display *dpy, Window win)
 
 		if (XSelectExtensionEvent(dpy, win, event_list, ev)) {
 			warn("error selecting extension events");
-			return;
+			return (0);
 		}
 	}
+
+	return (ev);
 }
+
+void
+snoop(Display *dpy, Window win)
+{
+	Window parent, root, *kids = NULL;
+	XSetWindowAttributes sattrs;
+	unsigned int nkids = 0, i;
+
+	/* firefox stops responding to keys when KeyPressMask is used, so
+	 * settle for KeyReleaseMask */
+	int type = PointerMotionMask | KeyReleaseMask | Button1MotionMask |
+		Button2MotionMask | Button3MotionMask | Button4MotionMask |
+		Button5MotionMask | ButtonMotionMask;
+
+	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == FALSE) {
+		warn("can't query window tree\n");
+		goto done;
+	}
+
+	XSelectInput(dpy, root, type);
+
+	/* listen for newly mapped windows */
+	sattrs.event_mask = SubstructureNotifyMask;
+	XChangeWindowAttributes(dpy, root, CWEventMask, &sattrs);
+
+	for (i = 0; i < nkids; i++) {
+		XSelectInput(dpy, kids[i], type);
+		snoop(dpy, kids[i]);
+	}
+
+done:
+	if (kids != NULL)
+		XFree(kids); /* hide yo kids */
+}
+
 
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-dp] [-i mod]\n", __progname);
+	fprintf(stderr, "usage: %s [-d] [-i mod]\n", __progname);
 	exit(1);
 }
 
