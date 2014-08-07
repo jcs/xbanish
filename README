@@ -31,7 +31,11 @@ two middle-clicks to paste the clipboard contents.
 
 To avoid these problems and simplify the implementation, xbanish now uses the
 modern Xfixes extension[1] to easily hide and show the cursor with
-XFixesHideCursor() and XFixesShowCursor().
+XFixesHideCursor() and XFixesShowCursor().  It also uses the Xinput extension
+to receive global keystroke and mouse movement events, falling back on its old
+behavior of calling XSelectInput() on every X11 window when the extension is
+not available.  This works around issues receiving keystroke data in Firefox
+and some other Gtk applications.
 
 
 0. https://bugs.launchpad.net/ubuntu/+source/unclutter/+bug/54148
