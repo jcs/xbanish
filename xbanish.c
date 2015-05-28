@@ -1,6 +1,6 @@
 /*
  * xbanish
- * Copyright (c) 2013, 2014 joshua stein <jcs@jcs.org>
+ * Copyright (c) 2013-2015 joshua stein <jcs@jcs.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,12 +37,16 @@
 #include <X11/Intrinsic.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
+#include <X11/extensions/XInput2.h>
 
-int snoop_xinput(Display *, Window);
-void snoop(Display *, Window);
+void hide_cursor(void);
+void show_cursor(void);
+int snoop_xinput(Window);
+void snoop_legacy(Window);
 void usage(void);
 int swallow_error(Display *, XErrorEvent *);
 
+/* xinput event type ids to be filled in later */
 static int button_press_type = -1;
 static int button_release_type = -1;
 static int key_press_type = -1;
@@ -51,15 +55,17 @@ static int motion_type = -1;
 
 extern char *__progname;
 
-static int debug = 0;
+static Display *dpy;
+static int debug = 0, hiding = 0, legacy = 0;
 static unsigned char ignored;
 
 int
 main(int argc, char *argv[])
 {
-	Display *dpy;
-	int hiding = 0, legacy = 0, ch, i;
+	int ch, i;
 	XEvent e;
+	XGenericEventCookie *cookie;
+
 	struct mod_lookup {
 		char *name;
 		int mask;
@@ -94,15 +100,17 @@ main(int argc, char *argv[])
 
 	XSetErrorHandler(swallow_error);
 
-	if (snoop_xinput(dpy, DefaultRootWindow(dpy)) == 0) {
+	if (snoop_xinput(DefaultRootWindow(dpy)) == 0) {
 		if (debug)
-			warn("no XInput devices found, using legacy snooping");
+			warn("no XInput devices found, using legacy "
+			    "snooping");
 
 		legacy = 1;
-		snoop(dpy, DefaultRootWindow(dpy));
+		snoop_legacy(DefaultRootWindow(dpy));
 	}
 
 	for (;;) {
+		cookie = &e.xcookie;
 		XNextEvent(dpy, &e);
 
 		int etype = e.type;
@@ -119,49 +127,53 @@ main(int argc, char *argv[])
 		case KeyRelease:
 			if (ignored && (e.xkey.state & ignored)) {
 				if (debug)
-					printf("ignored keystroke %d\n",
+					printf("ignoring keystroke %d\n",
 					    e.xkey.keycode);
 				break;
 			}
 
-			if (debug)
-				printf("keystroke, %shiding cursor\n",
-				    (hiding ? "already " : ""));
-
-			if (!hiding) {
-				XFixesHideCursor(dpy, DefaultRootWindow(dpy));
-				hiding = 1;
-			}
-
+			hide_cursor();
 			break;
 
 		case ButtonRelease:
 		case MotionNotify:
-			if (debug)
-				printf("mouse moved to %d,%d, %sunhiding "
-				    "cursor\n", e.xmotion.x_root,
-				    e.xmotion.y_root,
-				    (hiding ? "" : "already "));
-
-			if (hiding) {
-				XFixesShowCursor(dpy, DefaultRootWindow(dpy));
-				hiding = 0;
-			}
-
+			show_cursor();
 			break;
 
 		case CreateNotify:
 			if (legacy) {
 				if (debug)
-					printf("created new window, snooping "
-					    "on it\n");
+					printf("created new window, "
+					    "snooping on it\n");
 
 				/* not sure why snooping directly on the window
 				 * doesn't work, so snoop on all windows from
 				 * its parent (probably root) */
-				snoop(dpy, e.xcreatewindow.parent);
+				snoop_legacy(e.xcreatewindow.parent);
+			}
+			break;
+
+		case GenericEvent:
+			/* xi2 raw event */
+			XGetEventData(dpy, cookie);
+			XIDeviceEvent *xie = (XIDeviceEvent *)cookie->data;
+
+			switch (xie->evtype) {
+			case XI_RawMotion:
+			case XI_RawButtonPress:
+				show_cursor();
+				break;
+
+			case XI_RawButtonRelease:
+				break;
+
+			default:
+				if (debug)
+					printf("unknown XI event type %d\n",
+					    xie->evtype);
 			}
 
+			XFreeEventData(dpy, cookie);
 			break;
 
 		default:
@@ -171,20 +183,76 @@ main(int argc, char *argv[])
 	}
 }
 
+void
+hide_cursor()
+{
+	if (debug)
+		printf("keystroke, %shiding cursor\n",
+		    (hiding ? "already " : ""));
+
+	if (!hiding) {
+		XFixesHideCursor(dpy, DefaultRootWindow(dpy));
+		hiding = 1;
+	}
+}
+
+void
+show_cursor()
+{
+	if (debug)
+		printf("mouse moved, %sunhiding cursor\n",
+		    (hiding ? "" : "already "));
+
+	if (hiding) {
+		XFixesShowCursor(dpy, DefaultRootWindow(dpy));
+		hiding = 0;
+	}
+}
+
 int
-snoop_xinput(Display *dpy, Window win)
+snoop_xinput(Window win)
 {
 	int opcode, event, error, numdevs, i, j;
+	int major, minor, rc, rawmotion = 0;
 	int ev = 0;
+	unsigned char mask[(XI_LASTEVENT + 7)/8];
 	XDeviceInfo *devinfo;
 	XInputClassInfo *ici;
 	XDevice *device;
+	XIEventMask evmasks[1];
 
 	if (!XQueryExtension(dpy, "XInputExtension", &opcode, &event, &error)) {
 		if (debug)
 			warn("XInput extension not available");
 
 		return (0);
+	}
+
+	/*
+	 * If we support xinput 2, use that for raw motion and button events to
+	 * get pointer data when the cursor is over a Chromium window.  We
+	 * could also use this to get raw key input and avoid the other XInput
+	 * stuff, but we may need to be able to examine the key value later to
+	 * filter out ignored keys.
+	 */
+	major = minor = 2;
+	rc = XIQueryVersion(dpy, &major, &minor);
+	if (rc != BadRequest) {
+		memset(mask, 0, sizeof(mask));
+
+		XISetMask(mask, XI_RawMotion);
+		XISetMask(mask, XI_RawButtonPress);
+		evmasks[0].deviceid = XIAllMasterDevices;
+		evmasks[0].mask_len = sizeof(mask);
+		evmasks[0].mask = mask;
+
+		XISelectEvents(dpy, win, evmasks, 1);
+		XFlush(dpy);
+
+		rawmotion = 1;
+
+		if (debug)
+			printf("using xinput2 raw motion events\n");
 	}
 
 	devinfo = XListInputDevices(dpy, &numdevs);
@@ -213,6 +281,9 @@ snoop_xinput(Display *dpy, Window win)
 				break;
 
 			case ButtonClass:
+				if (rawmotion)
+					continue;
+
 				if (debug)
 					printf("attaching to buttoned device "
 					    "%s (use %d)\n", devinfo[i].name,
@@ -225,6 +296,9 @@ snoop_xinput(Display *dpy, Window win)
 				break;
 
 			case ValuatorClass:
+				if (rawmotion)
+					continue;
+
 				if (debug)
 					printf("attaching to pointing device "
 					    "%s (use %d)\n", devinfo[i].name,
@@ -246,14 +320,16 @@ snoop_xinput(Display *dpy, Window win)
 }
 
 void
-snoop(Display *dpy, Window win)
+snoop_legacy(Window win)
 {
 	Window parent, root, *kids = NULL;
 	XSetWindowAttributes sattrs;
 	unsigned int nkids = 0, i;
 
-	/* firefox stops responding to keys when KeyPressMask is used, so
-	 * settle for KeyReleaseMask */
+	/*
+	 * Firefox stops responding to keys when KeyPressMask is used, so
+	 * settle for KeyReleaseMask
+	 */
 	int type = PointerMotionMask | KeyReleaseMask | Button1MotionMask |
 		Button2MotionMask | Button3MotionMask | Button4MotionMask |
 		Button5MotionMask | ButtonMotionMask;
@@ -271,14 +347,13 @@ snoop(Display *dpy, Window win)
 
 	for (i = 0; i < nkids; i++) {
 		XSelectInput(dpy, kids[i], type);
-		snoop(dpy, kids[i]);
+		snoop_legacy(kids[i]);
 	}
 
 done:
 	if (kids != NULL)
 		XFree(kids); /* hide yo kids */
 }
-
 
 void
 usage(void)
@@ -288,7 +363,7 @@ usage(void)
 }
 
 int
-swallow_error(Display *dpy, XErrorEvent *e)
+swallow_error(Display *d, XErrorEvent *e)
 {
 	if (e->error_code == BadWindow)
 		/* no biggie */
