@@ -29,8 +29,10 @@ $(OBJS): *.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 install: all
+	mkdir -p $(BINDIR)
 	$(INSTALL_PROGRAM) $(PROG) $(BINDIR)
-	- $(INSTALL_DATA) -m 644 xbanish.1 $(MANDIR)/xbanish.1
+	mkdir -p $(MANDIR)
+	$(INSTALL_DATA) -m 644 xbanish.1 $(MANDIR)/xbanish.1
 
 clean:
 	rm -f $(PROG) $(OBJS)
