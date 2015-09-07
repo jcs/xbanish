@@ -49,7 +49,6 @@ int swallow_error(Display *, XErrorEvent *);
 /* xinput event type ids to be filled in later */
 static int button_press_type = -1;
 static int button_release_type = -1;
-static int key_press_type = -1;
 static int key_release_type = -1;
 static int motion_type = -1;
 
@@ -114,10 +113,12 @@ main(int argc, char *argv[])
 		XNextEvent(dpy, &e);
 
 		int etype = e.type;
+		unsigned int keycode;
+		unsigned int state;
+
 		if (e.type == motion_type)
 			etype = MotionNotify;
-		else if (e.type == key_press_type ||
-		    e.type == key_release_type)
+		else if (e.type == key_release_type)
 			etype = KeyRelease;
 		else if (e.type == button_press_type ||
 		    e.type == button_release_type)
@@ -125,10 +126,23 @@ main(int argc, char *argv[])
 
 		switch (etype) {
 		case KeyRelease:
-			if (ignored && (e.xkey.state & ignored)) {
+			if (legacy) {
+				keycode = e.xkey.keycode;
+				state = e.xkey.state;
+			} else {
+				/* If xinput extension is used, the event struct
+				 * needs to be casted properly to get the correct
+				 * keycode/state
+				 */
+				XDeviceKeyEvent *de = (XDeviceKeyEvent *)&e;
+				keycode = de->keycode;
+				state = de->state;
+			}
+
+			if (ignored && (state & ignored)) {
 				if (debug)
 					printf("ignoring keystroke %d\n",
-					    e.xkey.keycode);
+					    keycode);
 				break;
 			}
 
@@ -274,8 +288,6 @@ snoop_xinput(Window win)
 					    "%s (use %d)\n", devinfo[i].name,
 					    devinfo[i].use);
 
-				DeviceKeyPress(device, key_press_type,
-				    event_list[ev]); ev++;
 				DeviceKeyRelease(device, key_release_type,
 				    event_list[ev]); ev++;
 				break;
