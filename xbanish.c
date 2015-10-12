@@ -184,7 +184,7 @@ main(int argc, char *argv[])
 }
 
 void
-hide_cursor()
+hide_cursor(void)
 {
 	if (debug)
 		printf("keystroke, %shiding cursor\n",
@@ -197,7 +197,7 @@ hide_cursor()
 }
 
 void
-show_cursor()
+show_cursor(void)
 {
 	if (debug)
 		printf("mouse moved, %sunhiding cursor\n",
