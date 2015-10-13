@@ -184,7 +184,7 @@ main(int argc, char *argv[])
 }
 
 void
-hide_cursor()
+hide_cursor(void)
 {
 	if (debug)
 		printf("keystroke, %shiding cursor\n",
@@ -197,7 +197,7 @@ hide_cursor()
 }
 
 void
-show_cursor()
+show_cursor(void)
 {
 	if (debug)
 		printf("mouse moved, %sunhiding cursor\n",
@@ -371,9 +371,6 @@ swallow_error(Display *d, XErrorEvent *e)
 	else if (e->error_code & FirstExtensionError)
 		/* error requesting input on a particular xinput device */
 		return 0;
-	else {
-		fprintf(stderr, "%s: got X error %d\n", __progname,
-			e->error_code);
-		exit(1);
-	}
+	else
+		errx(1, "got X error %d", e->error_code);
 }
