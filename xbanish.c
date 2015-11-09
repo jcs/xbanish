@@ -98,6 +98,11 @@ main(int argc, char *argv[])
 	if (!(dpy = XOpenDisplay(NULL)))
 		errx(1, "can't open display %s", XDisplayName(NULL));
 
+#ifdef __OpenBSD__
+	if (pledge("stdio", NULL) == -1)
+		err(1, "pledge");
+#endif
+
 	XSetErrorHandler(swallow_error);
 
 	if (snoop_xinput(DefaultRootWindow(dpy)) == 0) {
