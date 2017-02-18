@@ -172,6 +172,12 @@ main(int argc, char *argv[])
 			case XI_RawButtonRelease:
 				break;
 
+            case XI_RawTouchBegin:
+            case XI_RawTouchEnd:
+            case XI_RawTouchUpdate:
+                hide_cursor();
+                break;
+
 			default:
 				if (debug)
 					printf("unknown XI event type %d\n",
@@ -247,6 +253,7 @@ snoop_xinput(Window win)
 
 		XISetMask(mask, XI_RawMotion);
 		XISetMask(mask, XI_RawButtonPress);
+		XISetMask(mask, XI_RawTouchBegin);
 		evmasks[0].deviceid = XIAllMasterDevices;
 		evmasks[0].mask_len = sizeof(mask);
 		evmasks[0].mask = mask;
