@@ -45,6 +45,7 @@ int snoop_xinput(Window);
 void snoop_legacy(Window);
 void usage(void);
 int swallow_error(Display *, XErrorEvent *);
+unsigned char parse_ignore(char *arg);
 
 /* xinput event type ids to be filled in later */
 static int button_press_type = -1;
@@ -62,19 +63,9 @@ static unsigned char ignored;
 int
 main(int argc, char *argv[])
 {
-	int ch, i;
+	int ch;
 	XEvent e;
 	XGenericEventCookie *cookie;
-
-	struct mod_lookup {
-		char *name;
-		int mask;
-	} mods[] = {
-		{"shift", ShiftMask}, {"lock", LockMask},
-		{"control", ControlMask}, {"mod1", Mod1Mask},
-		{"mod2", Mod2Mask}, {"mod3", Mod3Mask},
-		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
-	};
 
 	while ((ch = getopt(argc, argv, "di:")) != -1)
 		switch (ch) {
@@ -82,11 +73,7 @@ main(int argc, char *argv[])
 			debug = 1;
 			break;
 		case 'i':
-			for (i = 0;
-			    i < sizeof(mods) / sizeof(struct mod_lookup); i++)
-				if (strcasecmp(optarg, mods[i].name) == 0)
-					ignored |= mods[i].mask;
-
+			ignored = parse_ignore(optarg);
 			break;
 		default:
 			usage();
@@ -378,4 +365,34 @@ swallow_error(Display *d, XErrorEvent *e)
 		return 0;
 	else
 		errx(1, "got X error %d", e->error_code);
+}
+
+unsigned char
+parse_ignore(char *arg)
+{
+	struct mod_lookup {
+		char *name;
+		int mask;
+	} mods[] = {
+		{"shift", ShiftMask}, {"lock", LockMask},
+		{"control", ControlMask}, {"mod1", Mod1Mask},
+		{"mod2", Mod2Mask}, {"mod3", Mod3Mask},
+		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
+	};
+
+	char *saveptr;
+	char *tok;
+	unsigned char ignore = 0;
+	int i;
+
+	tok = strtok_r(arg, ",", &saveptr);
+	while (tok != NULL) {
+		for (i = 0;
+				i < sizeof(mods) / sizeof(struct mod_lookup); i++)
+			if (strcasecmp(tok, mods[i].name) == 0)
+				ignore |= mods[i].mask;
+		tok = strtok_r(NULL, ",", &saveptr);
+	}
+
+	return ignore;
 }
