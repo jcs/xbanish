@@ -24,14 +24,22 @@ Print debugging messages to stdout.
 .It Fl i Ar modifier
 Ignore pressed key if
 .Ar modifier
-is used. Modifiers are:
-.Ic shift lock
-(for CapsLock)
-.Ic control mod1
-(for Alt or Meta)
-.Ic mod2 mod3 mod4
-(for Super, Windows, or Command), and
+is used.
+Modifiers are:
+.Ic shift ,
+.Ic lock
+(CapsLock),
+.Ic control ,
+.Ic mod1
+(Alt or Meta),
+.Ic mod2
+(NumLock),
+.Ic mod3
+(Hyper),
+.Ic mod4
+(Super, Windows, or Command), and
 .Ic mod5
+(ISO Level 3 Shift).
 .El
 .Sh SEE ALSO
 .Xr XFixes 3
