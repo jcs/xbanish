@@ -1,21 +1,20 @@
-xbanish
-by joshua stein <jcs@jcs.org>
-===============================================================================
+## xbanish
+### by joshua stein <jcs@jcs.org>
 
 xbanish hides the mouse cursor when you start typing, and shows it again when
 the mouse cursor moves or a mouse button is pressed.  This is similar to
 xterm's pointerMode setting, but xbanish works globally in the X11 session.
 
-unclutter's -keystroke mode is supposed to do this, but it's broken[0].  I
-looked into fixing it, but the unclutter source code is terrible, so I wrote
+unclutter's -keystroke mode is supposed to do this, but it's
+[broken](https://bugs.launchpad.net/ubuntu/+source/unclutter/+bug/54148).
+I looked into fixing it, but the unclutter source code is terrible, so I wrote
 xbanish.
 
 The name comes from ratpoison's "banish" command that sends the cursor to the
 corner of the screen.
 
 
-Implementation
-===============================================================================
+### Implementation
 
 If the XInput extension is supported, xbanish uses it to request input from all
 attached keyboards and mice.  If XInput 2.2 is supported, raw mouse movement
@@ -37,9 +36,7 @@ hide the Awesome Bar dropdown as soon as a key was pressed, and xterm required
 two middle-clicks to paste the clipboard contents.
 
 To avoid these problems and simplify the implementation, xbanish now uses the
-modern Xfixes extension[1] to easily hide and show the cursor with
-XFixesHideCursor() and XFixesShowCursor().
-
-
-0. https://bugs.launchpad.net/ubuntu/+source/unclutter/+bug/54148
-1. http://cgit.freedesktop.org/xorg/proto/fixesproto/plain/fixesproto.txt
+modern Xfixes
+[extension](http://cgit.freedesktop.org/xorg/proto/fixesproto/plain/fixesproto.txt)
+to easily hide and show the cursor with XFixesHideCursor() and
+XFixesShowCursor().
