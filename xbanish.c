@@ -130,11 +130,34 @@ main(int argc, char *argv[])
 
 		switch (etype) {
 		case KeyRelease:
-			if (ignored && (e.xkey.state & ignored)) {
-				if (debug)
-					printf("ignoring keystroke %d\n",
-					    e.xkey.keycode);
-				break;
+			if (ignored) {
+				unsigned int state = 0;
+
+				/* masks are only set on key release, if
+				 * ignore is set we must throw out non-release
+				 * events here */
+				if (e.type == key_press_type) {
+					break;
+				}
+
+				/* extract modifier state */
+				if (e.type == key_release_type) {
+					/* xinput device event */
+					XDeviceKeyEvent *key =
+					    (XDeviceKeyEvent *) &e;
+					state = key->state;
+				} else if (e.type == KeyRelease) {
+					/* legacy event */
+					state = e.xkey.state;
+				}
+
+				if (state & ignored) {
+					if (debug) {
+						printf("ignoring key %d\n",
+						    state);
+					}
+					break;
+				}
 			}
 
 			hide_cursor();
