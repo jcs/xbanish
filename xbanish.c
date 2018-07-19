@@ -76,7 +76,7 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "di:")) != -1)
+	while ((ch = getopt(argc, argv, "di:l")) != -1)
 		switch (ch) {
 		case 'd':
 			debug = 1;
@@ -87,6 +87,9 @@ main(int argc, char *argv[])
 				if (strcasecmp(optarg, mods[i].name) == 0)
 					ignored |= mods[i].mask;
 
+			break;
+		case 'l':
+			legacy = 1;
 			break;
 		default:
 			usage();
@@ -105,12 +108,17 @@ main(int argc, char *argv[])
 
 	XSetErrorHandler(swallow_error);
 
-	if (snoop_xinput(DefaultRootWindow(dpy)) == 0) {
+	if (!legacy && snoop_xinput(DefaultRootWindow(dpy)) == 0) {
 		if (debug)
 			warn("no XInput devices found, using legacy "
 			    "snooping");
 
 		legacy = 1;
+	}
+
+	if (legacy) {
+		if (debug)
+			printf("using legacy snooping\n");
 		snoop_legacy(DefaultRootWindow(dpy));
 	}
 
@@ -386,7 +394,7 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-d] [-i mod]\n", __progname);
+	fprintf(stderr, "usage: %s [-l] [-d] [-i mod]\n", __progname);
 	exit(1);
 }
 
