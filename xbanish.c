@@ -56,7 +56,7 @@ static int motion_type = -1;
 extern char *__progname;
 
 static Display *dpy;
-static int debug = 0, hiding = 0, legacy = 0;
+static int debug = 0, hiding = 0, legacy = 0, always_hide = 0;
 static unsigned char ignored;
 
 int
@@ -76,8 +76,11 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "di:")) != -1)
+	while ((ch = getopt(argc, argv, "adi:")) != -1)
 		switch (ch) {
+		case 'a':
+			always_hide = 1;
+			break;
 		case 'd':
 			debug = 1;
 			break;
@@ -113,7 +116,11 @@ main(int argc, char *argv[])
 		legacy = 1;
 		snoop_legacy(DefaultRootWindow(dpy));
 	}
-
+   
+	if (always_hide) {
+		hide_cursor();
+	}
+   
 	for (;;) {
 		cookie = &e.xcookie;
 		XNextEvent(dpy, &e);
@@ -231,7 +238,11 @@ show_cursor(void)
 		printf("mouse moved, %sunhiding cursor\n",
 		    (hiding ? "" : "already "));
 
-	if (hiding) {
+	if (always_hide) {
+		return;
+	}
+   
+	if (hiding) { // disable cursor showing
 		XFixesShowCursor(dpy, DefaultRootWindow(dpy));
 		hiding = 0;
 	}
@@ -386,7 +397,7 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-d] [-i mod]\n", __progname);
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod]\n", __progname);
 	exit(1);
 }
 
