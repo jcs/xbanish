@@ -6,6 +6,7 @@
 .Nd hide the X11 mouse cursor when a key is pressed
 .Sh SYNOPSIS
 .Nm
+.Op Fl a
 .Op Fl d
 .Op Fl i Ar modifier
 .Sh DESCRIPTION
@@ -19,6 +20,8 @@ setting
 but the effect is global in the X11 session.
 .Sh OPTIONS
 .Bl -tag -width Ds
+.It Fl a
+Always hide mouse cursor.
 .It Fl d
 Print debugging messages to stdout.
 .It Fl i Ar modifier
