@@ -9,6 +9,7 @@
 .Op Fl a
 .Op Fl d
 .Op Fl i Ar modifier
+.Op Fl m Ar nw|ne|sw|se
 .Sh DESCRIPTION
 .Nm
 hides the X11 mouse cursor when a key is pressed.
@@ -45,6 +46,9 @@ Modifiers are:
 (Super, Windows, or Command), and
 .Ic mod5
 (ISO Level 3 Shift).
+.It Fl m Ar nw|ne|sw|se
+When hiding the mouse cursor, move it to this corner of the screen,
+then move it back when showing the cursor.
 .El
 .Sh SEE ALSO
 .Xr XFixes 3

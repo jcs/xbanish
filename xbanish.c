@@ -62,6 +62,14 @@ static unsigned char ignored;
 static int debug = 0;
 #define DPRINTF(x) { if (debug) { printf x; } };
 
+static int move = 0, move_x, move_y;
+enum move_types {
+	MOVE_NW = 1,
+	MOVE_NE,
+	MOVE_SW,
+	MOVE_SE,
+};
+
 int
 main(int argc, char *argv[])
 {
@@ -79,7 +87,7 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "adi:")) != -1)
+	while ((ch = getopt(argc, argv, "adi:m:")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
@@ -93,6 +101,20 @@ main(int argc, char *argv[])
 				if (strcasecmp(optarg, mods[i].name) == 0)
 					ignored |= mods[i].mask;
 
+			break;
+		case 'm':
+			if (strcmp(optarg, "nw") == 0)
+				move = MOVE_NW;
+			else if (strcmp(optarg, "ne") == 0)
+				move = MOVE_NE;
+			else if (strcmp(optarg, "sw") == 0)
+				move = MOVE_SW;
+			else if (strcmp(optarg, "se") == 0)
+				move = MOVE_SE;
+			else {
+				warnx("invalid '-m' argument");
+				usage();
+			}
 			break;
 		default:
 			usage();
@@ -215,9 +237,49 @@ main(int argc, char *argv[])
 void
 hide_cursor(void)
 {
+	Window win;
+	int x, y, h, w, junk;
+
 	DPRINTF(("keystroke, %shiding cursor\n", (hiding ? "already " : "")));
 
 	if (!hiding) {
+		if (move) {
+			if (XQueryPointer(dpy, DefaultRootWindow(dpy),
+			    &win, &win, &x, &y, &junk, &junk, &junk)) {
+				move_x = x;
+				move_y = y;
+
+				h = XHeightOfScreen(DefaultScreenOfDisplay(dpy));
+				w = XWidthOfScreen(DefaultScreenOfDisplay(dpy));
+
+				switch (move) {
+				case MOVE_NW:
+					x = 0;
+					y = 0;
+					break;
+				case MOVE_NE:
+					x = w;
+					y = 0;
+					break;
+				case MOVE_SW:
+					x = 0;
+					y = h;
+					break;
+				case MOVE_SE:
+					x = w;
+					y = h;
+					break;
+				}
+
+				XWarpPointer(dpy, None, DefaultRootWindow(dpy),
+				    0, 0, 0, 0, x, y);
+			} else {
+				move_x = -1;
+				move_y = -1;
+				warn("failed finding cursor coordinates");
+			}
+		}
+
 		XFixesHideCursor(dpy, DefaultRootWindow(dpy));
 		hiding = 1;
 	}
@@ -231,6 +293,10 @@ show_cursor(void)
 
 	if (!hiding)
 		return;
+
+	if (move && move_x != -1 && move_y != -1)
+		XWarpPointer(dpy, None, DefaultRootWindow(dpy), 0, 0, 0, 0,
+		    move_x, move_y);
 
 	XFixesShowCursor(dpy, DefaultRootWindow(dpy));
 	hiding = 0;
@@ -379,7 +445,8 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod]\n", __progname);
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m nw|ne|sw|se]\n",
+	    __progname);
 	exit(1);
 }
 
