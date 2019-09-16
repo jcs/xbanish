@@ -3,7 +3,8 @@
 VERS	:= 1.6
 
 CC	?= cc
-CFLAGS	?= -O2 -Wall -Wunused -Wmissing-prototypes -Wstrict-prototypes
+CFLAGS	?= -O2
+CFLAGS	+= -Wall -Wunused -Wmissing-prototypes -Wstrict-prototypes -Wunused
 
 PREFIX	?= /usr/local
 BINDIR	?= $(PREFIX)/bin
