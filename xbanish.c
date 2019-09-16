@@ -56,8 +56,11 @@ static int motion_type = -1;
 extern char *__progname;
 
 static Display *dpy;
-static int debug = 0, hiding = 0, legacy = 0, always_hide = 0;
+static int hiding = 0, legacy = 0, always_hide = 0;
 static unsigned char ignored;
+
+static int debug = 0;
+#define DPRINTF(x) { if (debug) { printf x; } };
 
 int
 main(int argc, char *argv[])
@@ -109,18 +112,14 @@ main(int argc, char *argv[])
 	XSetErrorHandler(swallow_error);
 
 	if (snoop_xinput(DefaultRootWindow(dpy)) == 0) {
-		if (debug)
-			warn("no XInput devices found, using legacy "
-			    "snooping");
-
+		DPRINTF(("no XInput devices found, using legacy snooping"));
 		legacy = 1;
 		snoop_legacy(DefaultRootWindow(dpy));
 	}
-   
-	if (always_hide) {
+
+	if (always_hide)
 		hide_cursor();
-	}
-   
+
 	for (;;) {
 		cookie = &e.xcookie;
 		XNextEvent(dpy, &e);
@@ -159,10 +158,7 @@ main(int argc, char *argv[])
 				}
 
 				if (state & ignored) {
-					if (debug) {
-						printf("ignoring key %d\n",
-						    state);
-					}
+					DPRINTF(("ignoring key %d\n", state));
 					break;
 				}
 			}
@@ -172,14 +168,13 @@ main(int argc, char *argv[])
 
 		case ButtonRelease:
 		case MotionNotify:
-			show_cursor();
+			if (!always_hide)
+				show_cursor();
 			break;
 
 		case CreateNotify:
 			if (legacy) {
-				if (debug)
-					printf("created new window, "
-					    "snooping on it\n");
+				DPRINTF(("new window, snooping on it\n"));
 
 				/* not sure why snooping directly on the window
 				 * doesn't work, so snoop on all windows from
@@ -196,24 +191,23 @@ main(int argc, char *argv[])
 			switch (xie->evtype) {
 			case XI_RawMotion:
 			case XI_RawButtonPress:
-				show_cursor();
+				if (!always_hide)
+					show_cursor();
 				break;
 
 			case XI_RawButtonRelease:
 				break;
 
 			default:
-				if (debug)
-					printf("unknown XI event type %d\n",
-					    xie->evtype);
+				DPRINTF(("unknown XI event type %d\n",
+				    xie->evtype));
 			}
 
 			XFreeEventData(dpy, cookie);
 			break;
 
 		default:
-			if (debug)
-				printf("unknown event type %d\n", e.type);
+			DPRINTF(("unknown event type %d\n", e.type));
 		}
 	}
 }
@@ -221,9 +215,7 @@ main(int argc, char *argv[])
 void
 hide_cursor(void)
 {
-	if (debug)
-		printf("keystroke, %shiding cursor\n",
-		    (hiding ? "already " : ""));
+	DPRINTF(("keystroke, %shiding cursor\n", (hiding ? "already " : "")));
 
 	if (!hiding) {
 		XFixesHideCursor(dpy, DefaultRootWindow(dpy));
@@ -234,18 +226,14 @@ hide_cursor(void)
 void
 show_cursor(void)
 {
-	if (debug)
-		printf("mouse moved, %sunhiding cursor\n",
-		    (hiding ? "" : "already "));
+	DPRINTF(("mouse moved, %sunhiding cursor\n",
+	    (hiding ? "" : "already ")));
 
-	if (always_hide) {
+	if (!hiding)
 		return;
-	}
-   
-	if (hiding) { // disable cursor showing
-		XFixesShowCursor(dpy, DefaultRootWindow(dpy));
-		hiding = 0;
-	}
+
+	XFixesShowCursor(dpy, DefaultRootWindow(dpy));
+	hiding = 0;
 }
 
 int
@@ -261,10 +249,8 @@ snoop_xinput(Window win)
 	XIEventMask evmasks[1];
 
 	if (!XQueryExtension(dpy, "XInputExtension", &opcode, &event, &error)) {
-		if (debug)
-			warn("XInput extension not available");
-
-		return (0);
+		DPRINTF(("XInput extension not available"));
+		return 0;
 	}
 
 	/*
@@ -290,8 +276,7 @@ snoop_xinput(Window win)
 
 		rawmotion = 1;
 
-		if (debug)
-			printf("using xinput2 raw motion events\n");
+		DPRINTF(("using xinput2 raw motion events\n"));
 	}
 
 	devinfo = XListInputDevices(dpy, &numdevs);
@@ -308,10 +293,9 @@ snoop_xinput(Window win)
 		ici++, j++) {
 			switch (ici->input_class) {
 			case KeyClass:
-				if (debug)
-					printf("attaching to keyboard device "
-					    "%s (use %d)\n", devinfo[i].name,
-					    devinfo[i].use);
+				DPRINTF(("attaching to keyboard device %s "
+				    "(use %d)\n", devinfo[i].name,
+				    devinfo[i].use));
 
 				DeviceKeyPress(device, key_press_type,
 				    event_list[ev]); ev++;
@@ -323,10 +307,9 @@ snoop_xinput(Window win)
 				if (rawmotion)
 					continue;
 
-				if (debug)
-					printf("attaching to buttoned device "
-					    "%s (use %d)\n", devinfo[i].name,
-					    devinfo[i].use);
+				DPRINTF(("attaching to buttoned device %s "
+				    "(use %d)\n", devinfo[i].name,
+				    devinfo[i].use));
 
 				DeviceButtonPress(device, button_press_type,
 				    event_list[ev]); ev++;
@@ -338,10 +321,9 @@ snoop_xinput(Window win)
 				if (rawmotion)
 					continue;
 
-				if (debug)
-					printf("attaching to pointing device "
-					    "%s (use %d)\n", devinfo[i].name,
-					    devinfo[i].use);
+				DPRINTF(("attaching to pointing device %s "
+				    "(use %d)\n", devinfo[i].name,
+				    devinfo[i].use));
 
 				DeviceMotionNotify(device, motion_type,
 				    event_list[ev]); ev++;
@@ -351,11 +333,11 @@ snoop_xinput(Window win)
 
 		if (XSelectExtensionEvent(dpy, win, event_list, ev)) {
 			warn("error selecting extension events");
-			return (0);
+			return 0;
 		}
 	}
 
-	return (ev);
+	return ev;
 }
 
 void
