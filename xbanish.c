@@ -239,13 +239,14 @@ hide_cursor(void)
 {
 	Window win;
 	int x, y, h, w, junk;
+	unsigned int ujunk;
 
 	DPRINTF(("keystroke, %shiding cursor\n", (hiding ? "already " : "")));
 
 	if (!hiding) {
 		if (move) {
 			if (XQueryPointer(dpy, DefaultRootWindow(dpy),
-			    &win, &win, &x, &y, &junk, &junk, &junk)) {
+			    &win, &win, &x, &y, &junk, &junk, &ujunk)) {
 				move_x = x;
 				move_y = y;
 
