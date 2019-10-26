@@ -42,3 +42,26 @@ modern
 [`Xfixes` extension](http://cgit.freedesktop.org/xorg/proto/fixesproto/plain/fixesproto.txt)
 to easily hide and show the cursor with `XFixesHideCursor()` and
 `XFixesShowCursor()`.
+
+### Usage
+
+```
+Usage: xbanish [OPTIONS]
+
+Options:
+  -a              Always keep mouse cursor hidden.
+  -d              Print debugging messages to stdout.
+  -i mod          Ignore pressed key if modifier [mod] is being used.
+  -m nw|ne|sw|se  When hiding the mouse cursor, move it to this corner of 
+                  the screen then move it back when showing the cusror.
+                  
+Modifiers:
+  shift 
+  lock (CapsLock)
+  control
+  mod1 (Alt or Meta)
+  mod2 (NumLock)
+  mod3 (Hyper)
+  mod4 (Super, Windows, or Command)
+  mod5 (ISO Level 3 Shift)
+```
