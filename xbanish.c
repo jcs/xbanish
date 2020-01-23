@@ -41,6 +41,7 @@
 
 void hide_cursor(void);
 void show_cursor(void);
+void snoop_root(void);
 int snoop_xinput(Window);
 void snoop_legacy(Window);
 void usage(void);
@@ -52,6 +53,7 @@ static int button_release_type = -1;
 static int key_press_type = -1;
 static int key_release_type = -1;
 static int motion_type = -1;
+static int device_change_type = -1;
 
 extern char *__progname;
 
@@ -133,11 +135,7 @@ main(int argc, char *argv[])
 
 	XSetErrorHandler(swallow_error);
 
-	if (snoop_xinput(DefaultRootWindow(dpy)) == 0) {
-		DPRINTF(("no XInput devices found, using legacy snooping"));
-		legacy = 1;
-		snoop_legacy(DefaultRootWindow(dpy));
-	}
+	snoop_root();
 
 	if (always_hide)
 		hide_cursor();
@@ -155,6 +153,10 @@ main(int argc, char *argv[])
 		else if (e.type == button_press_type ||
 		    e.type == button_release_type)
 			etype = ButtonRelease;
+		else if (e.type == device_change_type) {
+			snoop_root();
+			continue;
+		}
 
 		switch (etype) {
 		case KeyRelease:
@@ -303,6 +305,16 @@ show_cursor(void)
 	hiding = 0;
 }
 
+void
+snoop_root(void)
+{
+	if (snoop_xinput(DefaultRootWindow(dpy)) == 0) {
+		DPRINTF(("no XInput devices found, using legacy snooping"));
+		legacy = 1;
+		snoop_legacy(DefaultRootWindow(dpy));
+	}
+}
+
 int
 snoop_xinput(Window win)
 {
@@ -402,6 +414,13 @@ snoop_xinput(Window win)
 			warn("error selecting extension events");
 			return 0;
 		}
+	}
+
+	XEventClass class_presence;
+	DevicePresence(dpy, device_change_type, class_presence);
+	if (XSelectExtensionEvent(dpy, win, &class_presence, 1)) {
+		warn("error selecting extension events");
+		return 0;
 	}
 
 	return ev;
