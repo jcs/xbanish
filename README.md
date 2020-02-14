@@ -42,3 +42,11 @@ modern
 [`Xfixes` extension](http://cgit.freedesktop.org/xorg/proto/fixesproto/plain/fixesproto.txt)
 to easily hide and show the cursor with `XFixesHideCursor()` and
 `XFixesShowCursor()`.
+
+### Install Required packages in (X)Ubuntu 19.10
+> sudo apt install x11proto-dev libx11-dev libxt-dev libxfixes-dev libxi-dev
+
+### Build and run
+> make
+
+> ./xbanish
