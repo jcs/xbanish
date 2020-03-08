@@ -58,6 +58,10 @@ enum move_types {
 	MOVE_NE,
 	MOVE_SW,
 	MOVE_SE,
+	MOVE_WIN_NW,
+	MOVE_WIN_NE,
+	MOVE_WIN_SW,
+	MOVE_WIN_SE,
 };
 
 int
@@ -102,6 +106,14 @@ main(int argc, char *argv[])
 				move = MOVE_SW;
 			else if (strcmp(optarg, "se") == 0)
 				move = MOVE_SE;
+			else if (strcmp(optarg, "wnw") == 0)
+				move = MOVE_WIN_NW;
+			else if (strcmp(optarg, "wne") == 0)
+				move = MOVE_WIN_NE;
+			else if (strcmp(optarg, "wsw") == 0)
+				move = MOVE_WIN_SW;
+			else if (strcmp(optarg, "wse") == 0)
+				move = MOVE_WIN_SE;
 			else {
 				warnx("invalid '-m' argument");
 				usage(argv[0]);
@@ -234,6 +246,7 @@ void
 hide_cursor(void)
 {
 	Window win;
+	XWindowAttributes attrs;
 	int x, y, h, w, junk;
 	unsigned int ujunk;
 
@@ -247,6 +260,8 @@ hide_cursor(void)
 		    &win, &win, &x, &y, &junk, &junk, &ujunk)) {
 			move_x = x;
 			move_y = y;
+
+			XGetWindowAttributes(dpy, win, &attrs);
 
 			h = XHeightOfScreen(DefaultScreenOfDisplay(dpy));
 			w = XWidthOfScreen(DefaultScreenOfDisplay(dpy));
@@ -267,6 +282,22 @@ hide_cursor(void)
 			case MOVE_SE:
 				x = w;
 				y = h;
+				break;
+			case MOVE_WIN_NW:
+				x = attrs.x;
+				y = attrs.y;
+				break;
+			case MOVE_WIN_NE:
+				x = attrs.x + attrs.width;
+				y = attrs.y;
+				break;
+			case MOVE_WIN_SW:
+				x = attrs.x;
+				y = attrs.x + attrs.height;
+				break;
+			case MOVE_WIN_SE:
+				x = attrs.x + attrs.width;
+				y = attrs.x + attrs.height;
 				break;
 			}
 
@@ -468,7 +499,7 @@ done:
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m nw|ne|sw|se]\n",
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se]\n",
 	    progname);
 	exit(1);
 }
