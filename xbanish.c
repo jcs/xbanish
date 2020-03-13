@@ -496,7 +496,7 @@ done:
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m nw|ne|sw|se]\n",
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se]\n",
 	    __progname);
 	exit(1);
 }
