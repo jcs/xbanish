@@ -322,7 +322,7 @@ snoop_xinput(Window win)
 	int major, minor, rc, rawmotion = 0;
 	int ev = 0;
 	unsigned char mask[(XI_LASTEVENT + 7)/8];
-	XDeviceInfo *devinfo;
+	XDeviceInfo *devinfo = NULL;
 	XInputClassInfo *ici;
 	XDevice *device;
 	XIEventMask evmasks[1];
@@ -412,7 +412,8 @@ snoop_xinput(Window win)
 
 		if (XSelectExtensionEvent(dpy, win, event_list, ev)) {
 			warn("error selecting extension events");
-			return 0;
+			ev = 0;
+			goto done;
 		}
 	}
 
@@ -420,8 +421,13 @@ snoop_xinput(Window win)
 	DevicePresence(dpy, device_change_type, class_presence);
 	if (XSelectExtensionEvent(dpy, win, &class_presence, 1)) {
 		warn("error selecting extension events");
-		return 0;
+		ev = 0;
+		goto done;
 	}
+
+done:
+	if (devinfo != NULL)
+	   XFreeDeviceList(devinfo);
 
 	return ev;
 }
