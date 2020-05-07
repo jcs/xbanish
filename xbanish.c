@@ -44,7 +44,7 @@ void show_cursor(void);
 void snoop_root(void);
 int snoop_xinput(Window);
 void snoop_legacy(Window);
-void usage(void);
+void usage(char *);
 int swallow_error(Display *, XErrorEvent *);
 
 /* xinput event type ids to be filled in later */
@@ -54,8 +54,6 @@ static int key_press_type = -1;
 static int key_release_type = -1;
 static int motion_type = -1;
 static int device_change_type = -1;
-
-extern char *__progname;
 
 static Display *dpy;
 static int hiding = 0, legacy = 0, always_hide = 0;
@@ -115,11 +113,11 @@ main(int argc, char *argv[])
 				move = MOVE_SE;
 			else {
 				warnx("invalid '-m' argument");
-				usage();
+				usage(argv[0]);
 			}
 			break;
 		default:
-			usage();
+			usage(argv[0]);
 		}
 
 	argc -= optind;
@@ -469,10 +467,10 @@ done:
 }
 
 void
-usage(void)
+usage(char *progname)
 {
 	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m nw|ne|sw|se]\n",
-	    __progname);
+	    progname);
 	exit(1);
 }
 
