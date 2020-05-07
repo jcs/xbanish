@@ -410,6 +410,8 @@ snoop_xinput(Window win)
 			}
 		}
 
+		XCloseDevice(dpy, device);
+
 		if (XSelectExtensionEvent(dpy, win, event_list, ev)) {
 			warn("error selecting extension events");
 			ev = 0;
