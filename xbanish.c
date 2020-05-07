@@ -243,47 +243,48 @@ hide_cursor(void)
 
 	DPRINTF(("keystroke, %shiding cursor\n", (hiding ? "already " : "")));
 
-	if (!hiding) {
-		if (move) {
-			if (XQueryPointer(dpy, DefaultRootWindow(dpy),
-			    &win, &win, &x, &y, &junk, &junk, &ujunk)) {
-				move_x = x;
-				move_y = y;
+	if (hiding)
+		return;
 
-				h = XHeightOfScreen(DefaultScreenOfDisplay(dpy));
-				w = XWidthOfScreen(DefaultScreenOfDisplay(dpy));
+	if (move) {
+		if (XQueryPointer(dpy, DefaultRootWindow(dpy),
+		    &win, &win, &x, &y, &junk, &junk, &ujunk)) {
+			move_x = x;
+			move_y = y;
 
-				switch (move) {
-				case MOVE_NW:
-					x = 0;
-					y = 0;
-					break;
-				case MOVE_NE:
-					x = w;
-					y = 0;
-					break;
-				case MOVE_SW:
-					x = 0;
-					y = h;
-					break;
-				case MOVE_SE:
-					x = w;
-					y = h;
-					break;
-				}
+			h = XHeightOfScreen(DefaultScreenOfDisplay(dpy));
+			w = XWidthOfScreen(DefaultScreenOfDisplay(dpy));
 
-				XWarpPointer(dpy, None, DefaultRootWindow(dpy),
-				    0, 0, 0, 0, x, y);
-			} else {
-				move_x = -1;
-				move_y = -1;
-				warn("failed finding cursor coordinates");
+			switch (move) {
+			case MOVE_NW:
+				x = 0;
+				y = 0;
+				break;
+			case MOVE_NE:
+				x = w;
+				y = 0;
+				break;
+			case MOVE_SW:
+				x = 0;
+				y = h;
+				break;
+			case MOVE_SE:
+				x = w;
+				y = h;
+				break;
 			}
-		}
 
-		XFixesHideCursor(dpy, DefaultRootWindow(dpy));
-		hiding = 1;
+			XWarpPointer(dpy, None, DefaultRootWindow(dpy),
+			    0, 0, 0, 0, x, y);
+		} else {
+			move_x = -1;
+			move_y = -1;
+			warn("failed finding cursor coordinates");
+		}
 	}
+
+	XFixesHideCursor(dpy, DefaultRootWindow(dpy));
+	hiding = 1;
 }
 
 void
@@ -324,6 +325,7 @@ snoop_xinput(Window win)
 	XInputClassInfo *ici;
 	XDevice *device;
 	XIEventMask evmasks[1];
+	XEventClass class_presence;
 
 	if (!XQueryExtension(dpy, "XInputExtension", &opcode, &event, &error)) {
 		DPRINTF(("XInput extension not available"));
@@ -415,7 +417,6 @@ snoop_xinput(Window win)
 		}
 	}
 
-	XEventClass class_presence;
 	DevicePresence(dpy, device_change_type, class_presence);
 	if (XSelectExtensionEvent(dpy, win, &class_presence, 1)) {
 		warn("error selecting extension events");
