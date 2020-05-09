@@ -54,6 +54,7 @@ static int key_press_type = -1;
 static int key_release_type = -1;
 static int motion_type = -1;
 static int device_change_type = -1;
+static long last_device_change = -1;
 
 static Display *dpy;
 static int hiding = 0, legacy = 0, always_hide = 0;
@@ -152,7 +153,12 @@ main(int argc, char *argv[])
 		    e.type == button_release_type)
 			etype = ButtonRelease;
 		else if (e.type == device_change_type) {
+			XDevicePresenceNotifyEvent *xdpe =
+			    (XDevicePresenceNotifyEvent *)&e;
+			if (last_device_change == xdpe->serial)
+				continue;
 			snoop_root();
+			last_device_change = xdpe->serial;
 			continue;
 		}
 
