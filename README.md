@@ -14,6 +14,58 @@ The name comes from
 [ratpoison's](https://www.nongnu.org/ratpoison/)
 "banish" command that sends the cursor to the corner of the screen.
 
+### Build requirements
+
+#### Fedora
+
+```bash
+dnf install \
+ make \
+ libXi-devel \
+ libXfixes-devel \
+ libXt-devel \
+ libX11-devel \
+ ;
+```
+
+### Running as a Service
+
+#### Build
+
+```bash
+make
+cp xbanish /usr/local/bin/
+```
+
+#### Unit file
+
+```bash
+# ~/.config/systemd/user/xbanish.service
+[Unit]
+Description=xbanish
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/xbanish
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+#### Enable Service as User
+
+```bash
+systemctl --user enable xbanish
+```
+
+#### Start Service as User
+
+```bash
+systemctl --user start xbanish
+```
+
 ### Implementation
 
 If the XInput extension is supported, xbanish uses it to request input from all
