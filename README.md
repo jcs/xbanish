@@ -43,12 +43,15 @@ cp xbanish /usr/local/bin/
 # ~/.config/systemd/user/xbanish.service
 [Unit]
 Description=xbanish
-After=network-online.target
+After=home.mount
+Requires=home.mount
 
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/xbanish
 Restart=on-failure
+StartLimitBurst=10
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
