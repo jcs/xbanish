@@ -57,7 +57,7 @@ static int device_change_type = -1;
 static long last_device_change = -1;
 
 static Display *dpy;
-static int hiding = 0, legacy = 0, always_hide = 0;
+static int hiding = 0, legacy = 0, always_hide = 0, keep_touch_cursor = 0;
 static unsigned char ignored;
 
 static int debug = 0;
@@ -88,13 +88,16 @@ main(int argc, char *argv[])
 		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
 	};
 
-	while ((ch = getopt(argc, argv, "adi:m:")) != -1)
+	while ((ch = getopt(argc, argv, "adki:m:")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
 			break;
 		case 'd':
 			debug = 1;
+			break;
+		case 'k':
+			keep_touch_cursor = 1;
 			break;
 		case 'i':
 			for (i = 0;
@@ -229,7 +232,8 @@ main(int argc, char *argv[])
 			case XI_RawTouchBegin:
 			case XI_RawTouchEnd:
 			case XI_RawTouchUpdate:
-				hide_cursor();
+				if (!keep_touch_cursor)
+					hide_cursor();
 				break;
 
 			default:
@@ -485,7 +489,7 @@ done:
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m nw|ne|sw|se]\n",
+	fprintf(stderr, "usage: %s [-a] [-d] [-k] [-i mod] [-m nw|ne|sw|se]\n",
 	    progname);
 	exit(1);
 }
