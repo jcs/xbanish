@@ -42,3 +42,12 @@ modern
 [`Xfixes` extension](http://cgit.freedesktop.org/xorg/proto/fixesproto/plain/fixesproto.txt)
 to easily hide and show the cursor with `XFixesHideCursor()` and
 `XFixesShowCursor()`.
+
+
+## Building
+
+Requires several header files to compile; on debian-based systems these are provided by
+the packages `x11proto-dev`, `libx11-dev`, `libxi-dev`, `libxt-dev`, and `libxinput-dev`.
+
+    $ sudo apt install build-essential x11proto-dev libx11-dev libxi-dev libxt-dev libxfixes-dev
+    $ make
