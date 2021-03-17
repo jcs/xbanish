@@ -74,7 +74,8 @@ main(int argc, char *argv[])
 		{"shift", ShiftMask}, {"lock", LockMask},
 		{"control", ControlMask}, {"mod1", Mod1Mask},
 		{"mod2", Mod2Mask}, {"mod3", Mod3Mask},
-		{"mod4", Mod4Mask}, {"mod5", Mod5Mask}
+		{"mod4", Mod4Mask}, {"mod5", Mod5Mask},
+		{"all", -1},
 	};
 
 	while ((ch = getopt(argc, argv, "adi:m:")) != -1)
