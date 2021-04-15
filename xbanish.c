@@ -73,7 +73,7 @@ enum move_types {
 int
 main(int argc, char *argv[])
 {
-	int ch, i;
+	int ch, i, ignore_scroll = 0;
 	XEvent e;
 	XSyncAlarmNotifyEvent *alarm_e;
 	XGenericEventCookie *cookie;
@@ -92,7 +92,7 @@ main(int argc, char *argv[])
 		{"all", -1},
 	};
 
-	while ((ch = getopt(argc, argv, "adi:m:t:")) != -1)
+	while ((ch = getopt(argc, argv, "adi:m:t:s")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
@@ -131,6 +131,8 @@ main(int argc, char *argv[])
 			break;
 		case 't':
 			timeout = strtoul(optarg, NULL, 0);
+		case 's':
+			ignore_scroll = 1;
 			break;
 		default:
 			usage(argv[0]);
@@ -254,10 +256,12 @@ main(int argc, char *argv[])
 			switch (xie->evtype) {
 			case XI_RawMotion:
 			case XI_RawButtonPress:
+				if (ignore_scroll && ((xie->detail > 3 && xie->detail < 8) ||
+						xie->event_x == xie->event_y))
+					break;
 				if (!always_hide)
 					show_cursor();
 				break;
-
 			case XI_RawButtonRelease:
 				break;
 
