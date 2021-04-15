@@ -16,6 +16,7 @@
  */
 
 #include <err.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,6 +48,7 @@ static long last_device_change = -1;
 
 static Display *dpy;
 static int hiding = 0, legacy = 0, always_hide = 0;
+static unsigned timeout = 0;
 static unsigned char ignored;
 
 static int debug = 0;
@@ -82,7 +84,7 @@ main(int argc, char *argv[])
 		{"all", -1},
 	};
 
-	while ((ch = getopt(argc, argv, "adi:m:")) != -1)
+	while ((ch = getopt(argc, argv, "adi:m:t:")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
@@ -118,6 +120,10 @@ main(int argc, char *argv[])
 				warnx("invalid '-m' argument");
 				usage(argv[0]);
 			}
+			break;
+		case 't':
+			timeout = strtoul(optarg, NULL, 0);
+			signal(SIGALRM, (void *)hide_cursor);
 			break;
 		default:
 			usage(argv[0]);
@@ -312,6 +318,11 @@ hide_cursor(void)
 
 	XFixesHideCursor(dpy, DefaultRootWindow(dpy));
 	hiding = 1;
+
+	/* if this is triggered by a non xevent (the timeout)
+	 * an explicit flush is needed */
+	if (timeout)
+		XFlush(dpy);
 }
 
 void
@@ -319,6 +330,11 @@ show_cursor(void)
 {
 	DPRINTF(("mouse moved, %sunhiding cursor\n",
 	    (hiding ? "" : "already ")));
+
+	if (timeout) {
+		DPRINTF(("(re)setting timeout of %us\n", timeout));
+		alarm(timeout);
+	}
 
 	if (!hiding)
 		return;
@@ -499,7 +515,7 @@ done:
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se]\n",
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se] [-t seconds]\n",
 	    progname);
 	exit(1);
 }

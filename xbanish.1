@@ -10,6 +10,7 @@
 .Op Fl d
 .Op Fl i Ar modifier
 .Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se
+.Op Fl t Ar seconds
 .Sh DESCRIPTION
 .Nm
 hides the X11 mouse cursor when a key is pressed.
@@ -50,6 +51,10 @@ Modifiers are:
 .It Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se
 When hiding the mouse cursor, move it to this corner of the screen
 or current window, then move it back when showing the cursor.
+.It Fl t Ar seconds
+Hide the mouse after
+.Ic seconds
+have passed without mouse movement.
 .El
 .Sh SEE ALSO
 .Xr XFixes 3
