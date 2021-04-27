@@ -262,6 +262,7 @@ main(int argc, char *argv[])
 				if (!always_hide)
 					show_cursor();
 				break;
+
 			case XI_RawButtonRelease:
 				break;
 
