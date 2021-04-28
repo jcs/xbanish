@@ -7,8 +7,7 @@ the X11 session.
 
 unclutter's -keystroke mode is supposed to do this, but it's
 [broken](https://bugs.launchpad.net/ubuntu/+source/unclutter/+bug/54148).
-I looked into fixing it, but the unclutter source code is terrible, so I wrote
-xbanish.
+I looked into fixing it, but unclutter was abandoned so I wrote xbanish.
 
 The name comes from
 [ratpoison's](https://www.nongnu.org/ratpoison/)
