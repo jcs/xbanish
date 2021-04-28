@@ -49,7 +49,7 @@ static int device_change_type = -1;
 static long last_device_change = -1;
 
 static Display *dpy;
-static int hiding = 0, legacy = 0, always_hide = 0;
+static int hiding = 0, legacy = 0, always_hide = 0, ignore_scroll = 0;
 static unsigned timeout = 0;
 static unsigned char ignored;
 static XSyncCounter idler_counter = 0;
@@ -73,7 +73,7 @@ enum move_types {
 int
 main(int argc, char *argv[])
 {
-	int ch, i, ignore_scroll = 0;
+	int ch, i;
 	XEvent e;
 	XSyncAlarmNotifyEvent *alarm_e;
 	XGenericEventCookie *cookie;
@@ -256,7 +256,7 @@ main(int argc, char *argv[])
 			switch (xie->evtype) {
 			case XI_RawMotion:
 			case XI_RawButtonPress:
-				if (ignore_scroll && ((xie->detail > 3 && xie->detail < 8) ||
+				if (ignore_scroll && ((xie->detail >= 4 && xie->detail <= 7) ||
 						xie->event_x == xie->event_y))
 					break;
 				if (!always_hide)
@@ -579,7 +579,7 @@ void
 usage(char *progname)
 {
 	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se] "
-	    "[-t seconds]\n", progname);
+	    "[-t seconds] [-s]\n", progname);
 	exit(1);
 }
 
