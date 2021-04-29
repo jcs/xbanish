@@ -16,6 +16,7 @@
  */
 
 #include <err.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,7 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
+#include <X11/extensions/sync.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/XInput2.h>
@@ -33,6 +35,7 @@ void show_cursor(void);
 void snoop_root(void);
 int snoop_xinput(Window);
 void snoop_legacy(Window);
+void set_alarm(XSyncAlarm *, XSyncTestType);
 void usage(char *);
 int swallow_error(Display *, XErrorEvent *);
 
@@ -47,7 +50,10 @@ static long last_device_change = -1;
 
 static Display *dpy;
 static int hiding = 0, legacy = 0, always_hide = 0;
+static unsigned timeout = 0;
 static unsigned char ignored;
+static XSyncCounter idler_counter = 0;
+static XSyncAlarm idle_alarm = None;
 
 static int debug = 0;
 #define DPRINTF(x) { if (debug) { printf x; } };
@@ -69,7 +75,11 @@ main(int argc, char *argv[])
 {
 	int ch, i;
 	XEvent e;
+	XSyncAlarmNotifyEvent *alarm_e;
 	XGenericEventCookie *cookie;
+	XSyncSystemCounter *counters;
+	int sync_event, error;
+	int major, minor, ncounters;
 
 	struct mod_lookup {
 		char *name;
@@ -82,7 +92,7 @@ main(int argc, char *argv[])
 		{"all", -1},
 	};
 
-	while ((ch = getopt(argc, argv, "adi:m:")) != -1)
+	while ((ch = getopt(argc, argv, "adi:m:t:")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
@@ -119,6 +129,9 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 			}
 			break;
+		case 't':
+			timeout = strtoul(optarg, NULL, 0);
+			break;
 		default:
 			usage(argv[0]);
 		}
@@ -140,6 +153,26 @@ main(int argc, char *argv[])
 
 	if (always_hide)
 		hide_cursor();
+
+	/* required setup for the xsync alarms used by timeout */
+	if (timeout) {
+		if (XSyncQueryExtension(dpy, &sync_event, &error) != True)
+			errx(1, "no sync extension available");
+
+		XSyncInitialize(dpy, &major, &minor);
+
+		counters = XSyncListSystemCounters(dpy, &ncounters);
+		for (i = 0; i < ncounters; i++) {
+			if (!strcmp(counters[i].name, "IDLETIME")) {
+				idler_counter = counters[i].counter;
+				break;
+			}
+		}
+		XSyncFreeSystemCounterList(counters);
+
+		if (!idler_counter)
+			errx(1, "no idle counter");
+	}
 
 	for (;;) {
 		cookie = &e.xcookie;
@@ -237,7 +270,17 @@ main(int argc, char *argv[])
 			break;
 
 		default:
-			DPRINTF(("unknown event type %d\n", e.type));
+			if (!timeout || e.type != (sync_event + XSyncAlarmNotify)) {
+				DPRINTF(("unknown event type %d\n", e.type));
+				break;
+			}
+
+			alarm_e = (XSyncAlarmNotifyEvent *)&e;
+			if (alarm_e->alarm == idle_alarm) {
+				DPRINTF(("idle counter reached %dms, hiding cursor\n",
+					XSyncValueLow32(alarm_e->counter_value)));
+				hide_cursor();
+			}
 		}
 	}
 }
@@ -319,6 +362,11 @@ show_cursor(void)
 {
 	DPRINTF(("mouse moved, %sunhiding cursor\n",
 	    (hiding ? "" : "already ")));
+
+	if (timeout) {
+		DPRINTF(("(re)setting timeout of %us\n", timeout));
+		set_alarm(&idle_alarm, XSyncPositiveComparison);
+	}
 
 	if (!hiding)
 		return;
@@ -497,9 +545,37 @@ done:
 }
 
 void
+set_alarm(XSyncAlarm *alarm, XSyncTestType test)
+{
+	XSyncAlarmAttributes attr;
+	XSyncValue value;
+	unsigned int flags;
+	int64_t cur_idle;
+
+	XSyncQueryCounter(dpy, idler_counter, &value);
+	cur_idle = ((int64_t)XSyncValueHigh32(value) << 32) |
+	    XSyncValueLow32(value);
+	DPRINTF(("cur idle %ld\n", cur_idle));
+
+	attr.trigger.counter = idler_counter;
+	attr.trigger.test_type = test;
+	attr.trigger.value_type = XSyncRelative;
+	XSyncIntsToValue(&attr.trigger.wait_value, timeout * 1000,
+	    (unsigned long)(timeout * 1000) >> 32);
+	XSyncIntToValue(&attr.delta, 0);
+
+	flags = XSyncCACounter | XSyncCATestType | XSyncCAValue | XSyncCADelta;
+
+	if (*alarm)
+		XSyncDestroyAlarm(dpy, *alarm);
+
+	*alarm = XSyncCreateAlarm(dpy, flags, &attr);
+}
+
+void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se]\n",
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se] [-t seconds]\n",
 	    progname);
 	exit(1);
 }
