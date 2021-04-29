@@ -270,15 +270,17 @@ main(int argc, char *argv[])
 			break;
 
 		default:
-			if (!timeout || e.type != (sync_event + XSyncAlarmNotify)) {
+			if (!timeout ||
+			    e.type != (sync_event + XSyncAlarmNotify)) {
 				DPRINTF(("unknown event type %d\n", e.type));
 				break;
 			}
 
 			alarm_e = (XSyncAlarmNotifyEvent *)&e;
 			if (alarm_e->alarm == idle_alarm) {
-				DPRINTF(("idle counter reached %dms, hiding cursor\n",
-					XSyncValueLow32(alarm_e->counter_value)));
+				DPRINTF(("idle counter reached %dms, hiding "
+				    "cursor\n",
+				    XSyncValueLow32(alarm_e->counter_value)));
 				hide_cursor();
 			}
 		}
@@ -550,12 +552,8 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 	XSyncAlarmAttributes attr;
 	XSyncValue value;
 	unsigned int flags;
-	int64_t cur_idle;
 
 	XSyncQueryCounter(dpy, idler_counter, &value);
-	cur_idle = ((int64_t)XSyncValueHigh32(value) << 32) |
-	    XSyncValueLow32(value);
-	DPRINTF(("cur idle %ld\n", cur_idle));
 
 	attr.trigger.counter = idler_counter;
 	attr.trigger.test_type = test;
@@ -575,8 +573,8 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se] [-t seconds]\n",
-	    progname);
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se] "
+	    "[-t seconds]\n", progname);
 	exit(1);
 }
 
@@ -586,9 +584,10 @@ swallow_error(Display *d, XErrorEvent *e)
 	if (e->error_code == BadWindow)
 		/* no biggie */
 		return 0;
-	else if (e->error_code & FirstExtensionError)
+
+	if (e->error_code & FirstExtensionError)
 		/* error requesting input on a particular xinput device */
 		return 0;
-	else
-		errx(1, "got X error %d", e->error_code);
+
+	errx(1, "got X error %d", e->error_code);
 }
