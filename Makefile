@@ -2,7 +2,7 @@
 
 CC	?= cc
 CFLAGS	?= -O2
-CFLAGS	+= -Wall -Wunused -Wmissing-prototypes -Wstrict-prototypes -Wunused
+CFLAGS	+= -Wall -Wunused -Wmissing-prototypes -Wstrict-prototypes
 
 PREFIX	?= /usr/local
 BINDIR	?= $(PREFIX)/bin
@@ -13,7 +13,7 @@ INSTALL_DATA ?= install
 
 X11BASE	?= /usr/X11R6
 INCLUDES?= -I$(X11BASE)/include
-LDPATH	?= -L$(X11BASE)/lib
+LDFLAGS	+= -L$(X11BASE)/lib
 LIBS	+= -lX11 -lXfixes -lXi -lXext
 
 PROG	= xbanish
@@ -22,7 +22,7 @@ OBJS	= xbanish.o
 all: $(PROG)
 
 $(PROG): $(OBJS)
-	$(CC) $(OBJS) $(LDPATH) $(LIBS) -o $@
+	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
 
 $(OBJS): *.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
