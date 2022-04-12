@@ -15,16 +15,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define _POSIX_C_SOURCE 2
+
 #include <err.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <strings.h>
 
-#include <X11/X.h>
 #include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
 #include <X11/extensions/sync.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
@@ -530,7 +531,7 @@ snoop_legacy(Window win)
 		Button2MotionMask | Button3MotionMask | Button4MotionMask |
 		Button5MotionMask | ButtonMotionMask;
 
-	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == FALSE) {
+	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == false) {
 		warn("can't query window tree\n");
 		goto done;
 	}
