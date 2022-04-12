@@ -29,14 +29,14 @@
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/XInput2.h>
 
-void hide_cursor(void);
-void show_cursor(void);
-void snoop_root(void);
-int snoop_xinput(Window);
-void snoop_legacy(Window);
-void set_alarm(XSyncAlarm *, XSyncTestType);
-void usage(char *);
-int swallow_error(Display *, XErrorEvent *);
+static void hide_cursor(void);
+static void show_cursor(void);
+static void snoop_root(void);
+static int snoop_xinput(Window);
+static void snoop_legacy(Window);
+static void set_alarm(XSyncAlarm *, XSyncTestType);
+static void usage(char *);
+static int swallow_error(Display *, XErrorEvent *);
 
 /* xinput event type ids to be filled in later */
 static int button_press_type = -1;
