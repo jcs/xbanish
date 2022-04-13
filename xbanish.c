@@ -130,6 +130,7 @@ main(int argc, char *argv[])
 			break;
 		case 't':
 			timeout = strtoul(optarg, NULL, 0);
+			break;
 		case 's':
 			ignore_scroll = 1;
 			break;
