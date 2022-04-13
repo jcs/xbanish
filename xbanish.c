@@ -24,7 +24,6 @@
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
 #include <X11/extensions/sync.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
@@ -530,7 +529,7 @@ snoop_legacy(Window win)
 		Button2MotionMask | Button3MotionMask | Button4MotionMask |
 		Button5MotionMask | ButtonMotionMask;
 
-	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == FALSE) {
+	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == 0) {
 		warn("can't query window tree\n");
 		goto done;
 	}

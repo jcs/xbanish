@@ -11,10 +11,9 @@ MANDIR	?= $(PREFIX)/man/man1
 INSTALL_PROGRAM ?= install -s
 INSTALL_DATA ?= install
 
-X11BASE	?= /usr/X11R6
-INCLUDES?= -I$(X11BASE)/include
-LDFLAGS	+= -L$(X11BASE)/lib
-LIBS	+= -lX11 -lXfixes -lXi -lXext
+LIBS	?= x11 xfixes xi xext
+INCLUDES?= `pkg-config --cflags $(LIBS)`
+LDFLAGS	+= `pkg-config --libs $(LIBS)`
 
 PROG	= xbanish
 OBJS	= xbanish.o
@@ -22,7 +21,7 @@ OBJS	= xbanish.o
 all: $(PROG)
 
 $(PROG): $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+	$(CC) $(OBJS) $(LDFLAGS) -o $@
 
 $(OBJS): *.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
