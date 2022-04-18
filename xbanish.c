@@ -531,7 +531,7 @@ snoop_legacy(Window win)
 		Button2MotionMask | Button3MotionMask | Button4MotionMask |
 		Button5MotionMask | ButtonMotionMask;
 
-	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == false) {
+	if (XQueryTree(dpy, win, &root, &parent, &kids, &nkids) == 0) {
 		warn("can't query window tree\n");
 		goto done;
 	}
