@@ -9,7 +9,7 @@
 .Op Fl a
 .Op Fl d
 .Op Fl i Ar modifier
-.Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se
+.Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|+/\-xy
 .Op Fl t Ar seconds
 .Op Fl s
 .Sh DESCRIPTION
@@ -49,9 +49,10 @@ Modifiers are:
 .Ic mod5
 (ISO Level 3 Shift), and
 .Ic all
-.It Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se
+.It Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|+/\-xy
 When hiding the mouse cursor, move it to this corner of the screen
 or current window, then move it back when showing the cursor.
+Also accepts absolute positoning, see GEOMETRY SPECIFICATIONS of X(7).
 .It Fl t Ar seconds
 Hide the mouse cursor after
 .Ic seconds
@@ -61,6 +62,7 @@ Ignore scrolling events.
 .El
 .Sh SEE ALSO
 .Xr XFixes 3
+.Xr X 7
 .Sh AUTHORS
 .Nm
 was written by
