@@ -9,7 +9,7 @@
 .Op Fl a
 .Op Fl d
 .Op Fl i Ar modifier
-.Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|+/\-xy
+.Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|\(+-x\(+-y
 .Op Fl t Ar seconds
 .Op Fl s
 .Sh DESCRIPTION
@@ -49,10 +49,12 @@ Modifiers are:
 .Ic mod5
 (ISO Level 3 Shift), and
 .Ic all
-.It Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|+/\-xy
+.It Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|\(+-x\(+-y
 When hiding the mouse cursor, move it to this corner of the screen
 or current window, then move it back when showing the cursor.
-Also accepts absolute positoning, see GEOMETRY SPECIFICATIONS of X(7).
+Also accepts absolute positioning, for example `+50-100' will be
+positioned 50 pixels from the left and 100 pixels from the bottom.
+See GEOMETRY SPECIFICATIONS of X(7) for more info.
 .It Fl t Ar seconds
 Hide the mouse cursor after
 .Ic seconds
