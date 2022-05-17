@@ -28,6 +28,7 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/XInput2.h>
+#include <X11/Xutil.h>
 
 void hide_cursor(void);
 void show_cursor(void);
@@ -37,6 +38,7 @@ void snoop_legacy(Window);
 void set_alarm(XSyncAlarm *, XSyncTestType);
 void usage(char *);
 int swallow_error(Display *, XErrorEvent *);
+int parse_geometry(const char *s);
 
 /* xinput event type ids to be filled in later */
 static int button_press_type = -1;
@@ -57,7 +59,7 @@ static XSyncAlarm idle_alarm = None;
 static int debug = 0;
 #define DPRINTF(x) { if (debug) { printf x; } };
 
-static int move = 0, move_x, move_y;
+static int move = 0, move_x, move_y, move_custom_x, move_custom_y, move_custom_mask;
 enum move_types {
 	MOVE_NW = 1,
 	MOVE_NE,
@@ -67,6 +69,7 @@ enum move_types {
 	MOVE_WIN_NE,
 	MOVE_WIN_SW,
 	MOVE_WIN_SE,
+	MOVE_CUSTOM,
 };
 
 int
@@ -123,6 +126,8 @@ main(int argc, char *argv[])
 				move = MOVE_WIN_SW;
 			else if (strcmp(optarg, "wse") == 0)
 				move = MOVE_WIN_SE;
+			else if (parse_geometry(optarg))
+				move = MOVE_CUSTOM;
 			else {
 				warnx("invalid '-m' argument");
 				usage(argv[0]);
@@ -348,6 +353,10 @@ hide_cursor(void)
 			case MOVE_WIN_SE:
 				x = attrs.x + attrs.width;
 				y = attrs.x + attrs.height;
+				break;
+			case MOVE_CUSTOM:
+				x = (move_custom_mask & XNegative ? w : 0) + move_custom_x;
+				y = (move_custom_mask & YNegative ? h : 0) + move_custom_y;
 				break;
 			}
 
@@ -578,7 +587,7 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se] "
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se|+/-xy] "
 	    "[-t seconds] [-s]\n", progname);
 	exit(1);
 }
@@ -595,4 +604,20 @@ swallow_error(Display *d, XErrorEvent *e)
 		return 0;
 
 	errx(1, "got X error %d", e->error_code);
+}
+
+int
+parse_geometry(const char *s)
+{
+	int x, y;
+	unsigned int junk;
+	int ret = XParseGeometry(s, &x, &y, &junk, &junk);
+	if (((ret & XValue) || (ret & XNegative)) &&
+	    ((ret & YValue) || (ret & YNegative))) {
+		move_custom_x = x;
+		move_custom_y = y;
+		move_custom_mask = ret;
+		return 1;
+	}
+	return 0;
 }
