@@ -15,14 +15,16 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define _POSIX_C_SOURCE 2
+
 #include <err.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <strings.h>
 
-#include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/sync.h>
 #include <X11/extensions/Xfixes.h>
