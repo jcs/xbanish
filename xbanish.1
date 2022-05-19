@@ -1,4 +1,4 @@
-.Dd $Mdocdate: September 16 2019$
+.Dd $Mdocdate: March 13 2020$
 .Dt XBANISH 1
 .Os
 .Sh NAME
@@ -10,7 +10,9 @@
 .Op Fl d
 .Op Fl k
 .Op Fl i Ar modifier
-.Op Fl m Ar nw|ne|sw|se
+.Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|\(+-x\(+-y
+.Op Fl t Ar seconds
+.Op Fl s
 .Sh DESCRIPTION
 .Nm
 hides the X11 mouse cursor when a key is pressed.
@@ -46,15 +48,26 @@ Modifiers are:
 .Ic mod3
 (Hyper),
 .Ic mod4
-(Super, Windows, or Command), and
+(Super, Windows, or Command),
 .Ic mod5
-(ISO Level 3 Shift).
-.It Fl m Ar nw|ne|sw|se
-When hiding the mouse cursor, move it to this corner of the screen,
-then move it back when showing the cursor.
+(ISO Level 3 Shift), and
+.Ic all
+.It Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|\(+-x\(+-y
+When hiding the mouse cursor, move it to this corner of the screen
+or current window, then move it back when showing the cursor.
+Also accepts absolute positioning, for example `+50-100' will be
+positioned 50 pixels from the left and 100 pixels from the bottom.
+See GEOMETRY SPECIFICATIONS of X(7) for more info.
+.It Fl t Ar seconds
+Hide the mouse cursor after
+.Ic seconds
+have passed without mouse movement.
+.It Fl s
+Ignore scrolling events.
 .El
 .Sh SEE ALSO
 .Xr XFixes 3
+.Xr X 7
 .Sh AUTHORS
 .Nm
 was written by
