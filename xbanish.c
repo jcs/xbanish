@@ -50,7 +50,7 @@ static int device_change_type = -1;
 static long last_device_change = -1;
 
 static Display *dpy;
-static int hiding = 0, legacy = 0, always_hide = 0, ignore_scroll = 0;
+static int hiding = 0, legacy = 0, always_hide = 0, keep_touch_cursor = 0, ignore_scroll = 0;
 static unsigned timeout = 0;
 static unsigned char ignored;
 static XSyncCounter idler_counter = 0;
@@ -94,13 +94,16 @@ main(int argc, char *argv[])
 		{"all", -1},
 	};
 
-	while ((ch = getopt(argc, argv, "adi:m:t:s")) != -1)
+	while ((ch = getopt(argc, argv, "adki:m:t:s")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
 			break;
 		case 'd':
 			debug = 1;
+			break;
+		case 'k':
+			keep_touch_cursor = 1;
 			break;
 		case 'i':
 			for (i = 0;
@@ -271,6 +274,13 @@ main(int argc, char *argv[])
 			case XI_RawButtonRelease:
 				break;
 
+			case XI_RawTouchBegin:
+			case XI_RawTouchEnd:
+			case XI_RawTouchUpdate:
+				if (!keep_touch_cursor)
+					hide_cursor();
+				break;
+
 			default:
 				DPRINTF(("unknown XI event type %d\n",
 				    xie->evtype));
@@ -437,6 +447,7 @@ snoop_xinput(Window win)
 
 		XISetMask(mask, XI_RawMotion);
 		XISetMask(mask, XI_RawButtonPress);
+		XISetMask(mask, XI_RawTouchBegin);
 		evmasks[0].deviceid = XIAllMasterDevices;
 		evmasks[0].mask_len = sizeof(mask);
 		evmasks[0].mask = mask;
@@ -587,7 +598,7 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se|+/-xy] "
+	fprintf(stderr, "usage: %s [-a] [-d] [-k] [-i mod] [-m [w]nw|ne|sw|se|+/-xy] "
 	    "[-t seconds] [-s]\n", progname);
 	exit(1);
 }

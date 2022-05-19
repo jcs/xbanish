@@ -8,6 +8,7 @@
 .Nm
 .Op Fl a
 .Op Fl d
+.Op Fl k
 .Op Fl i Ar modifier
 .Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|\(+-x\(+-y
 .Op Fl t Ar seconds
@@ -29,6 +30,8 @@ Always keep mouse cursor hidden while
 is running.
 .It Fl d
 Print debugging messages to stdout.
+.It Fl k
+Keep the cursor visible after touch screen events.
 .It Fl i Ar modifier
 Ignore pressed key if
 .Ar modifier
