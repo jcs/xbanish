@@ -36,7 +36,7 @@ void snoop_root(void);
 int snoop_xinput(Window);
 void snoop_legacy(Window);
 void set_alarm(XSyncAlarm *, XSyncTestType);
-void usage(char *);
+void usage(char *progname);
 int swallow_error(Display *, XErrorEvent *);
 int parse_geometry(const char *s);
 
@@ -587,8 +587,8 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se|+/-xy] "
-	    "[-t seconds] [-s]\n", progname);
+	fprintf(stderr, "usage: %s %s\n", progname,
+			"[-a] [-d] [-i mod] [-m [w]nw|ne|sw|se|+/-xy] [-t seconds] [-s]");
 	exit(1);
 }
 
