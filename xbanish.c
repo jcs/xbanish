@@ -573,7 +573,8 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 	    (unsigned long)(timeout * 1000) >> 32);
 	XSyncIntToValue(&attr.delta, 0);
 
-	flags = XSyncCACounter | XSyncCATestType | XSyncCAValue | XSyncCADelta;
+	flags = XSyncCACounter | XSyncCATestType | XSyncCAValueType |
+	    XSyncCAValue | XSyncCADelta;
 
 	if (*alarm)
 		XSyncDestroyAlarm(dpy, *alarm);
