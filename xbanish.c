@@ -576,10 +576,10 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 	flags = XSyncCACounter | XSyncCATestType | XSyncCAValueType |
 	    XSyncCAValue | XSyncCADelta;
 
-	if (*alarm)
-		XSyncDestroyAlarm(dpy, *alarm);
-
-	*alarm = XSyncCreateAlarm(dpy, flags, &attr);
+	if (*alarm == None)
+		*alarm = XSyncCreateAlarm(dpy, flags, &attr);
+	else
+		XSyncChangeAlarm(dpy, *alarm, flags, &attr);
 }
 
 void
