@@ -569,8 +569,8 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 	attr.trigger.counter = idler_counter;
 	attr.trigger.test_type = test;
 	attr.trigger.value_type = XSyncRelative;
-	XSyncIntsToValue(&attr.trigger.wait_value, timeout * 1000,
-	    (unsigned long)(timeout * 1000) >> 32);
+	XSyncIntsToValue(&attr.trigger.wait_value, timeout * 1000UL,
+	    (timeout * 1000UL) >> 32);
 	XSyncIntToValue(&attr.delta, 0);
 
 	flags = XSyncCACounter | XSyncCATestType | XSyncCAValueType |
