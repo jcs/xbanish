@@ -564,10 +564,7 @@ void
 set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 {
 	XSyncAlarmAttributes attr;
-	XSyncValue value;
 	unsigned int flags;
-
-	XSyncQueryCounter(dpy, idler_counter, &value);
 
 	attr.trigger.counter = idler_counter;
 	attr.trigger.test_type = test;
