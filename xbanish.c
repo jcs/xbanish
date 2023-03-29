@@ -111,10 +111,10 @@ main(int argc, char *argv[])
 					ignored |= mods[i].mask;
 
 			break;
-        case 'k':
-            // choose which keyboard device to listen only (in case of xremap or Kmonad being used)
-            master_keyboard_device = strdup(optarg);
-            break;
+		case 'k':
+			// choose which keyboard device to listen only (in case of xremap or Kmonad being used)
+			master_keyboard_device = optarg;
+			break;
 		case 'm':
 			if (strcmp(optarg, "nw") == 0)
 				move = MOVE_NW;
@@ -469,9 +469,9 @@ snoop_xinput(Window win)
 		ici++, j++) {
 			switch (ici->input_class) {
 			case KeyClass:
-                if (master_keyboard_device &&
-                    strncmp(master_keyboard_device, devinfo[i].name, strlen(master_keyboard_device)) != 0)
-                    continue;
+				if (master_keyboard_device &&
+					strncmp(master_keyboard_device, devinfo[i].name, strlen(master_keyboard_device)) != 0)
+					continue;
 
 				DPRINTF(("attaching to keyboard device %s "
 				    "(use %d)\n", devinfo[i].name,
