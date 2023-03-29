@@ -56,6 +56,8 @@ static unsigned char ignored;
 static XSyncCounter idler_counter = 0;
 static XSyncAlarm idle_alarm = None;
 
+static char *master_keyboard_device;
+
 static int debug = 0;
 #define DPRINTF(x) { if (debug) { printf x; } };
 
@@ -94,7 +96,7 @@ main(int argc, char *argv[])
 		{"all", -1},
 	};
 
-	while ((ch = getopt(argc, argv, "adi:m:t:s")) != -1)
+	while ((ch = getopt(argc, argv, "adi:k:m:t:s")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
@@ -109,6 +111,10 @@ main(int argc, char *argv[])
 					ignored |= mods[i].mask;
 
 			break;
+        case 'k':
+            // choose which keyboard device to listen only (in case of xremap or Kmonad being used)
+            master_keyboard_device = strdup(optarg);
+            break;
 		case 'm':
 			if (strcmp(optarg, "nw") == 0)
 				move = MOVE_NW;
@@ -463,6 +469,10 @@ snoop_xinput(Window win)
 		ici++, j++) {
 			switch (ici->input_class) {
 			case KeyClass:
+                if (master_keyboard_device &&
+                    strncmp(master_keyboard_device, devinfo[i].name, strlen(master_keyboard_device)) != 0)
+                    continue;
+
 				DPRINTF(("attaching to keyboard device %s "
 				    "(use %d)\n", devinfo[i].name,
 				    devinfo[i].use));
@@ -587,7 +597,7 @@ set_alarm(XSyncAlarm *alarm, XSyncTestType test)
 void
 usage(char *progname)
 {
-	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-m [w]nw|ne|sw|se|+/-xy] "
+	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-k master_keyboard] [-m [w]nw|ne|sw|se|+/-xy] "
 	    "[-t seconds] [-s]\n", progname);
 	exit(1);
 }
