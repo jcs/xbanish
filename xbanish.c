@@ -233,7 +233,22 @@ main(int argc, char *argv[])
 				}
 			}
 
-			hide_cursor();
+			/* detect key repeat events */
+			int is_repeat = 0;
+			if(XEventsQueued(dpy, QueuedAlready)) {
+				XEvent nev;
+				XPeekEvent(dpy, &nev);
+				if((nev.type == KeyPress || nev.type == key_press_type)
+						&& nev.xkey.time == e.xkey.time
+						&& nev.xkey.keycode == e.xkey.keycode) {
+					// skip this event and the next one
+					XNextEvent(dpy, &e);
+					is_repeat = 1;
+				}
+			}
+
+			if (!is_repeat)
+				hide_cursor();
 			break;
 
 		case ButtonRelease:
