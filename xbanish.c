@@ -94,7 +94,7 @@ main(int argc, char *argv[])
 		{"all", -1},
 	};
 
-	while ((ch = getopt(argc, argv, "adi:lm:t:s")) != -1)
+	while ((ch = getopt(argc, argv, "adi:lm:st:")) != -1)
 		switch (ch) {
 		case 'a':
 			always_hide = 1;
@@ -136,11 +136,11 @@ main(int argc, char *argv[])
 				usage(argv[0]);
 			}
 			break;
-		case 't':
-			timeout = strtoul(optarg, NULL, 0);
-			break;
 		case 's':
 			ignore_scroll = 1;
+			break;
+		case 't':
+			timeout = strtoul(optarg, NULL, 0);
 			break;
 		default:
 			usage(argv[0]);
@@ -591,7 +591,7 @@ void
 usage(char *progname)
 {
 	fprintf(stderr, "usage: %s [-a] [-d] [-i mod] [-l] [-m [w]nw|ne|sw|se|+/-xy] "
-	    "[-t seconds] [-s]\n", progname);
+	    "[-s] [-t seconds]\n", progname);
 	exit(1);
 }
 
