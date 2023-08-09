@@ -11,8 +11,8 @@
 .Op Fl i Ar modifier
 .Op Fl l
 .Op Fl m Oo Ar w Oc Ns Ar nw|ne|sw|se|\(+-x\(+-y
-.Op Fl t Ar seconds
 .Op Fl s
+.Op Fl t Ar seconds
 .Sh DESCRIPTION
 .Nm
 hides the X11 mouse cursor when a key is pressed.
@@ -60,12 +60,12 @@ or current window, then move it back when showing the cursor.
 Also accepts absolute positioning, for example `+50-100' will be
 positioned 50 pixels from the left and 100 pixels from the bottom.
 See GEOMETRY SPECIFICATIONS of X(7) for more info.
+.It Fl s
+Ignore scrolling events.
 .It Fl t Ar seconds
 Hide the mouse cursor after
 .Ic seconds
 have passed without mouse movement.
-.It Fl s
-Ignore scrolling events.
 .El
 .Sh SEE ALSO
 .Xr XFixes 3
